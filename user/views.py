@@ -1,3 +1,4 @@
+from django.db.models.query import QuerySet
 from django.shortcuts import redirect, render
 from django.views import generic
 from product.models import Product, ProductSize
@@ -16,25 +17,23 @@ from django.utils import timezone
 class HomeView(generic.ListView):
     model = Category
     template_name = "index.html"
-    context_object_name = "data"
+    context_object_name = "categories"
+
+    def get_queryset(self):
+        return self.model.objects.filter(parent=None)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        categories = context[
+            "categories"
+        ]  # or use default name 'object_list' and remove context_object_name='categories'
         obj = [
             {
                 "id": category.id,
                 "name": category.name,
-                "parent": (
-                    {
-                        "id": category.parent.id,
-                        "name": category.parent.name,
-                        "parent": category.parent.parent,
-                    }
-                    if category.parent
-                    else None
-                ),
+                "parent": category.parent,
             }
-            for category in context["object_list"]
+            for category in categories
         ]
         context["data"] = json.dumps(obj)
         print(context)

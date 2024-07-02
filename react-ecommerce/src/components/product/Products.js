@@ -14,16 +14,21 @@ const Products = () => {
   const [selectedSizes, setSelectedSizes] = useState([]);
 
   useEffect(() => {
-    try {
-      const jsonData = document.getElementById("data").textContent;
-      const parseData = JSON.parse(jsonData);
-      setProducts(parseData.products);
-      setCategories(parseData.filters.categories);
-      setBrands(parseData.filters.brands);
-      setSizes(parseData.filters.sizes);
-    } catch (error) {
-      console.error("Error parsing JSON:", error);
+    const jsonData = document.getElementById("data")?.textContent;
+    if(jsonData){
+      try {
+        const parseData = JSON.parse(jsonData);
+        setProducts(parseData.products);
+        setCategories(parseData.filters.categories);
+        setBrands(parseData.filters.brands);
+        setSizes(parseData.filters.sizes);
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+      }
+    }else{
+      console.warn("No data found in the element with id 'data'")
     }
+    
   }, []);
 
   const handleCategoryChange = (event) => {
