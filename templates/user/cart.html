@@ -1,0 +1,86 @@
+{% extends "../index.html" %} 
+{% load static %}
+
+{% block content %} 
+
+
+{% for item in items %}
+<span data-id="{{item.product.id}}">{{item.product.product}}<button class="change-quantity-btn" value="decrement">-</button><input type="number" class="q-cls" value="{{item.quantity}}">
+<button class="change-quantity-btn" value="increment">+</button>
+<p>{{item.product.size}}</p>
+<p id="p-stock">{{item.product.stock}}</p>
+</span>
+{% endfor %}
+
+{% if items %}
+<button id="o-btn">Order</button>
+{% endif %}
+
+<script src="{% static 'jquery/jquery-3.7.1.min.js' %}"></script>
+
+<script>
+    $(document).ready(function(){
+        function updatecart(productid,action){
+            let udata
+            let pdata = {product : productid,action:action}
+            console.log(pdata)
+            return $.ajax({
+                url: "{% url 'add_to_cart' %}",
+                data : JSON.stringify(pdata),
+                contentType : "application/json",
+                method : "POST",
+                headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+            })
+        }
+
+        $("body").on("click",".change-quantity-btn",function(event){
+            event.preventDefault()
+            let parentspan = $(this).closest("span")
+            let productid = parentspan.data("id")
+            let action = $(this).val()
+            let quantity = parentspan.children(".q-cls")
+            let stock = parentspan.children("#p-stock")
+            
+            updatecart(productid,action).done(function(data){
+                console.log(data)
+                quantity.val(data.quantity)
+                stock.html(data.stock)
+                if (quantity.val() == 0){
+                    parentspan.remove()
+                }
+            }).fail(function(data){
+                console.error("Error updating cart : ",data.message)
+            })
+
+            
+            
+        })
+
+        $("body").on("click","#o-btn",function(event){
+            event.preventDefault()
+            $.ajax({
+                url: "{% url 'order_create' %}",
+                contentType : "application/json",
+                method : "POST",
+                headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    success: function(data){
+                        window.location.href ="/order/orders"
+                        console.log(data)
+                    },error:function(error){
+                        console.error(error)
+                        window.location.href ="/accounts/login/?next=/cart"
+                    }
+            })
+
+        })
+
+        
+    })
+</script>
+
+
+{% endblock %}

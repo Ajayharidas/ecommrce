@@ -1,0 +1,45 @@
+{% extends "../index.html" %} 
+{% load static %}
+{% load socialaccount %}
+
+{% block content %} 
+
+<form action="" method="post" id="login-form">
+    {% csrf_token %}
+    {{form.as_p}}
+    <input type="button" value="login" id="login-btn">
+</form>
+
+<a href="{% provider_login_url 'google' %}">Login with Google</a>
+<a href="{% provider_login_url 'facebook' %}">Login with Facebook</a>
+<a href="{% provider_login_url 'github' %}">Login with GitHub</a>
+
+<script src="{% static 'jquery/jquery-3.7.1.min.js' %}"></script>
+<script>
+    $(document).ready(function(){
+        $("#login-btn").on("click",function(){
+            let formdata = new FormData($("#login-form")[0])
+            // for (let pair of formdata.entries()){
+
+            //     console.log(pair[0],pair[1])
+            // }
+            $.ajax({
+                url: "{% url 'login' %}",
+                data : formdata,
+                processData:false,
+                contentType : false,
+                method : "POST",
+                success: function(data){
+                    console.log(data.message)
+                    window.location.href = data.redirect_url
+                },error:function(data){
+                    console.log(data.responseJSON.message)
+                }
+            })
+        })
+    })
+    
+</script>
+
+
+{% endblock %}

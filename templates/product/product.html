@@ -1,0 +1,54 @@
+{% extends "../index.html" %} 
+{% load static %}
+
+{% block content %} 
+
+
+<p>{{product.name}}</p>
+
+{% for product_image in product.product_image.all %}
+<img width="200" height="200" src="{{product_image.image.url}}" alt="{{product.name}}">
+{% endfor %}
+{% for product_size in product.product_size.all %}
+<label for="s-cls">{{product_size.size.name}}</label>
+{% if product_size.stock == 0 %}
+<input type="radio" name="s-radio" class="s-cls" value="{{product_size.id}}" disabled>
+<label for="s-cls">{{product_size.stock}}</label>
+{% else %}
+<input type="radio" name="s-radio" class="s-cls" value="{{product_size.id}}">
+<label for="s-cls">{{product_size.stock}}</label>
+{% endif %}
+{% endfor %}
+
+<button id="cart-btn">+ add to cart</button>
+
+<script src="{% static 'jquery/jquery-3.7.1.min.js' %}"></script>
+<script>
+    $(document).ready(function(){
+        $("#cart-btn").on("click",function(){
+            let pdata = {product : $("input[name='s-radio']:checked").val()}
+            console.log(pdata)
+            $.ajax({
+                url: "{% url 'add_to_cart' %}",
+                data : JSON.stringify(pdata),
+                contentType : "application/json",
+                type : "POST",
+                headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                success: function(data){
+                    console.log(data)
+                },error:function(data){
+                    console.log(data.responseJSON.redirect_url)
+                    window.location.href = data.responseJSON.redirect_url
+                }
+            })
+        })
+
+        
+    })
+    
+</script>
+
+
+{% endblock %}

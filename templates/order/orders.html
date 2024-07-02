@@ -1,0 +1,44 @@
+{% extends "../index.html" %} 
+{% load static %}
+
+{% block content %} 
+
+{% for order in orders %}
+<p>{{order.user.username}}</p>
+<p>{{order.date}}</p>
+<p>{{order.status}}</p>
+{% for ordered_product in order.ordered_products.all %}
+<p>{{ordered_product.product.name}}</p>
+{% endfor %}
+{% endfor %}
+
+<script src="{% static 'jquery/jquery-3.7.1.min.js' %}"></script>
+<script>
+    // $(document).ready(function(){
+    //     $("#cart-btn").on("click",function(){
+    //         let pdata = {product : $(this).attr("data-pslug")}
+    //         console.log(pdata)
+    //         $.ajax({
+    //             url: "{% url 'add_to_cart' %}",
+    //             data : JSON.stringify(pdata),
+    //             contentType : "application/json",
+    //             type : "POST",
+    //             headers: {
+    //                     'X-CSRFToken': '{{ csrf_token }}'
+    //                 },
+    //             success: function(data){
+    //                 console.log(data)
+    //             },error:function(data){
+    //                 console.log(data.responseJSON.redirect_url)
+    //                 window.location.href = data.responseJSON.redirect_url
+    //             }
+    //         })
+    //     })
+
+        
+    // })
+    
+</script>
+
+
+{% endblock %}

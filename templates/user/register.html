@@ -1,0 +1,21 @@
+{% extends "../index.html" %}
+{% load socialaccount %}
+{% block content %}
+
+<div style="width: 50%;">
+    <form action="{% url 'register' %}" method="post">
+        {% csrf_token %}
+        
+        {{form.as_p}}
+
+        <input type="submit" value="register">
+        
+    </form>
+    <br>
+    <a href="{% provider_login_url 'google' %}">Login with Google</a>
+    <a href="{% provider_login_url 'facebook' %}">Login with Facebook</a>
+    <a href="{% provider_login_url 'github' %}">Login with GitHub</a>
+</div>
+
+
+{% endblock %}
