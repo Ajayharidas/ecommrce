@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from brand.models import Brand
 from category.models import Category
 from django.template.defaultfilters import slugify
+from django.db.models import Prefetch
 
 
 class Product(models.Model):
@@ -11,12 +12,12 @@ class Product(models.Model):
             products = (
                 super()
                 .get_queryset()
+                .select_related("brand")
                 .prefetch_related(
-                    "productimage",
-                    "productsize",
-                    "category",
-                    "brand",
-                    "productsize__size",
+                    Prefetch("productimage"),
+                    Prefetch("productsize"),
+                    Prefetch("category"),
+                    Prefetch("productsize__size"),
                 )
             )
             return products

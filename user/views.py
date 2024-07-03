@@ -19,9 +19,6 @@ class HomeView(generic.ListView):
     template_name = "index.html"
     context_object_name = "categories"
 
-    def get_queryset(self):
-        return self.model.objects.filter(parent=None)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         categories = context[
@@ -31,12 +28,10 @@ class HomeView(generic.ListView):
             {
                 "id": category.id,
                 "name": category.name,
-                "parent": category.parent,
             }
             for category in categories
         ]
         context["data"] = json.dumps(obj)
-        print(context)
         return context
 
     # def get_queryset(self):

@@ -5,7 +5,7 @@ from django.views import generic
 from brand.models import Brand
 from product.models import Product, ProductImages, ProductSize, Size
 from category.models import Category
-from django.db.models import Count, Q, F
+from django.db.models import Count, Q, F, Prefetch
 from django.http import JsonResponse
 import json
 
@@ -13,18 +13,20 @@ import json
 class ProductListView(generic.ListView):
     model = Product
     template_name = "index.html"
-    paginate_by = 1
-    context_object_name = "data"
 
     def get_queryset(self):
-        return Product.objects.filter(
-            Q(category__id=self.kwargs.get("pk"))
-            | Q(category__parent__id=self.kwargs.get("pk"))
-        ).distinct()
+        return (
+            self.model.objects.all()
+            .filter(
+                Q(category__id=self.kwargs.get("pk"))
+                | Q(category__parent__id=self.kwargs.get("pk"))
+            )
+            .distinct()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        products_queryset = self.get_queryset()
+        products_queryset = context["object_list"]
         product_data = [
             {
                 "id": product.id,
@@ -35,8 +37,6 @@ class ProductListView(generic.ListView):
                 "brand": {
                     "id": product.brand.id,
                     "name": product.brand.name,
-                    "email": product.brand.email,
-                    "phone": product.brand.phone,
                 },
                 "images": list(
                     {"id": image.id, "name": str(image.image)}
@@ -50,22 +50,29 @@ class ProductListView(generic.ListView):
             for product in products_queryset
         ]
 
-        categories = Category.objects.filter(
-            product__in=products_queryset, parent__id=self.kwargs.get("pk")
-        ).distinct()
+        categories = (
+            Category.objects.filter(
+                product__in=products_queryset, parent__id=self.kwargs.get("pk")
+            )
+            .distinct()
+            .only("id", "name")
+        )
 
         sizes = Size.objects.filter(
             productsize__product__in=products_queryset
         ).distinct()
 
-        brands = Brand.objects.filter(product__in=products_queryset).distinct()
+        brands = (
+            Brand.objects.filter(product__in=products_queryset)
+            .distinct()
+            .only("id", "name")
+        )
 
         filter_data = {
             "categories": list(
                 {
                     "id": category.id,
                     "name": category.name,
-                    "parent": (category.parent.id, category.parent.name),
                 }
                 for category in categories
             ),
@@ -125,8 +132,6 @@ class ProductFilterView(generic.View):
                 "brand": {
                     "id": product.brand.id,
                     "name": product.brand.name,
-                    "email": product.brand.email,
-                    "phone": product.brand.phone,
                 },
                 "images": list(
                     {"id": image.id, "name": str(image.image)}

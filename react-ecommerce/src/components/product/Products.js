@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { axiosInstance } from "../axios/axios";
 import { useParams } from "react-router-dom";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
+import ProductCard from "../common/Card";
+import FilterList from "../common/List";
 
 const Products = () => {
   const { categoryid } = useParams();
@@ -15,7 +19,7 @@ const Products = () => {
 
   useEffect(() => {
     const jsonData = document.getElementById("data")?.textContent;
-    if(jsonData){
+    if (jsonData) {
       try {
         const parseData = JSON.parse(jsonData);
         setProducts(parseData.products);
@@ -25,10 +29,9 @@ const Products = () => {
       } catch (error) {
         console.error("Error parsing JSON:", error);
       }
-    }else{
-      console.warn("No data found in the element with id 'data'")
+    } else {
+      console.warn("No data found in the element with id 'data'");
     }
-    
   }, []);
 
   const handleCategoryChange = (event) => {
@@ -71,85 +74,130 @@ const Products = () => {
 
   return (
     <>
-      <div className="row">
-        {products || products.length > 0 ? (
-          products.map((product) => (
-            <div className="col-sm-2" key={product.id}>
-              <p>{product.name}</p>
-              <p>{product.brand.name}</p>
-              <p>{product.price}</p>
-            </div>
-          ))
-        ) : (
-          <p>No products available</p>
-        )}
-      </div>
-      <div className="row">
-        <p>Filter</p>
-        <ul>
-          {categories ? (
-            categories.map((category) => (
-              <li key={category.id}>
-                <input
-                  type="checkbox"
-                  className="category"
-                  value={category.id}
-                  onChange={handleCategoryChange}
-                />
-                {category.name}
-              </li>
-            ))
-          ) : (
-            <p>No categories available</p>
-          )}
-        </ul>
-        <ul>
-          {brands ? (
-            brands.map((brand) => (
-              <li key={brand.id}>
-                <input
-                  type="checkbox"
-                  className="brand"
-                  value={brand.id}
-                  onChange={handleBrandChange}
-                />
-                {brand.name}
-              </li>
-            ))
-          ) : (
-            <p>No brands available</p>
-          )}
-        </ul>
-        <ul>
-          {sizes ? (
-            sizes.map((size) => (
-              <li key={size.id}>
-                <input
-                  type="checkbox"
-                  className="size"
-                  value={size.id}
-                  onChange={handleSizeChange}
-                />
-                {size.name}
-              </li>
-            ))
-          ) : (
-            <p>No sizes available</p>
-          )}
-        </ul>
-        <button
-          type="button"
-          onClick={() =>
-            fetchproducts({
-              subcategories: selectedSubcategories,
-              brands: selectedBrands,
-              sizes: selectedSizes,
-            })
-          }
+      <Grid container spacing={2} sx={{ py: "30px" }}>
+        <Grid
+          item
+          xl={3}
+          lg={3}
+          md={3}
+          sm={3}
+          xs={3}
+          sx={{
+            display: {
+              xl: "block",
+              lg: "block",
+              md: "block",
+              sm: "none",
+              xs: "none",
+            },
+            p: "0px 20px 0px 30px!important",
+          }}
         >
-          Apply
-        </button>
-      </div>
+          <p>Filter</p>
+          <FilterList categories={categories} brands={brands} sizes={sizes} />
+          <ul>
+            {categories ? (
+              categories.map((category) => (
+                <li key={category.id}>
+                  <input
+                    type="checkbox"
+                    className="category"
+                    value={category.id}
+                    onChange={handleCategoryChange}
+                  />
+                  {category.name}
+                </li>
+              ))
+            ) : (
+              <p>No categories available</p>
+            )}
+          </ul>
+          <ul>
+            {brands ? (
+              brands.map((brand) => (
+                <li key={brand.id}>
+                  <input
+                    type="checkbox"
+                    className="brand"
+                    value={brand.id}
+                    onChange={handleBrandChange}
+                  />
+                  {brand.name}
+                </li>
+              ))
+            ) : (
+              <p>No brands available</p>
+            )}
+          </ul>
+          <ul>
+            {sizes ? (
+              sizes.map((size) => (
+                <li key={size.id}>
+                  <input
+                    type="checkbox"
+                    className="size"
+                    value={size.id}
+                    onChange={handleSizeChange}
+                  />
+                  {size.name}
+                </li>
+              ))
+            ) : (
+              <p>No sizes available</p>
+            )}
+          </ul>
+          <button
+            type="button"
+            onClick={() =>
+              fetchproducts({
+                subcategories: selectedSubcategories,
+                brands: selectedBrands,
+                sizes: selectedSizes,
+              })
+            }
+          >
+            Apply
+          </button>
+        </Grid>
+        <Grid
+          item
+          xl={9}
+          lg={9}
+          md={9}
+          sm={12}
+          xs={12}
+          sx={{ pr: "30px!important" }}
+        >
+          <Grid
+            container
+            justifyContent={"flex-start"}
+            alignItems={"center"}
+            spacing={3}
+          >
+            {products && products.length > 0 ? (
+              products.map((product) => (
+                <Grid item xl={3} lg={3} md={3} sm={3} xs={4} key={product.id}>
+                  <ProductCard
+                    id={product.id}
+                    name={product.name}
+                    price={product.price}
+                    image={
+                      product.images && product.images.length > 0
+                        ? product.images[0].name
+                        : ""
+                    }
+                    description={product.description}
+                  />
+                </Grid>
+              ))
+            ) : (
+              <Grid item xl={true}>
+                <Typography>Result not found</Typography>
+              </Grid>
+            )}
+          </Grid>
+        </Grid>
+      </Grid>
     </>
   );
 };

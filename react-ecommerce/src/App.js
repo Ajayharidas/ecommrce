@@ -20,7 +20,7 @@ function App() {
           <Grid item xs={12} xl={12}>
             <Header />
           </Grid>
-          <Grid item xs={12} xl={12} sx={{ backgroundColor: "blueviolet" }}>
+          <Grid item xs={12} xl={12}>
             <Routes>
               <Route path="/home" element={<Home />} />
               <Route
