@@ -17,3 +17,55 @@ code {
   margin: 0;
   padding: 0;
 }
+.form-control{
+  line-height: 2.5!important;
+  box-shadow: none!important;
+  outline: none!important;
+  border-radius: 0!important;
+}
+.form-label{
+  margin: 0!important;
+  visibility: hidden!important;
+}
+
+.btn{
+  background-color: blueviolet!important;
+  line-height: 2.5!important;
+  box-shadow: none!important;
+  outline: none!important;
+  border-radius: 0!important;
+  text-transform: uppercase;
+  color: #fff;
+  font-size: small;
+  font-weight: bolder;
+}
+.btn:hover{
+  background-color: blueviolet!important;
+}
+.btn:focus{
+  outline: none!important;
+}
+.login-col-sm{
+  background-color: #f8f8f8!important;
+  padding: 1.6%!important;
+  position: static;
+}
+.alert-block{
+  position: absolute;
+  background-color: rgb(255, 0, 93);
+  color: white;
+  font-weight: 100;
+  right: 0.8%!important;
+  bottom: 0!important;
+  border-radius: 0!important;
+  display: inline-block!important;
+}
+
+.alert-block ul{
+  list-style-type: none!important;
+
+}
+
+
+
+

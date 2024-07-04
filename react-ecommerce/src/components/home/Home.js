@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
 import Link from "@mui/material/Link";
-import { UseModeContext } from "../../context/EcoContext";
+import { UseEcoContext } from "../../context/EcoContext";
 
 const Home = () => {
+  const { getUser } = UseEcoContext();
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const jsondata = document.getElementById("data")?.textContent;
+
     if (jsondata) {
       try {
         const parsedata = JSON.parse(jsondata);
-        setCategories(parsedata);
+        console.log(parsedata);
+        setCategories(parsedata.homedata);
+        getUser.updateUser(parsedata.sessiondata);
       } catch (error) {
         console.error("Error parsing JSON:", error);
       }

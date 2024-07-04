@@ -9,15 +9,16 @@ import InputBase from "@mui/material/InputBase";
 import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import Link from "@mui/material/Link";
+import { UseEcoContext } from "../../context/EcoContext";
 
 const Search = styled("div")(({ theme }) => ({
-  position: "relative",
+  position: "absolute",
   borderRadius: theme.shape.borderRadius,
   backgroundColor: alpha(theme.palette.common.white, 0.15),
   "&:hover": {
     backgroundColor: alpha(theme.palette.common.white, 0.25),
   },
-  marginLeft: 0,
+  right: "1.66%",
   width: "100%",
   [theme.breakpoints.up("sm")]: {
     marginLeft: theme.spacing(1),
@@ -53,11 +54,14 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function SearchAppBar() {
+  const { user } = UseEcoContext();
   const navitems = Object.freeze([
     { url: "/home", name: "home" },
     { url: "/", name: "men" },
     { url: "/", name: "women" },
-    { url: "/accounts/login", name: "login" },
+    user && user.is_authenticated
+      ? { url: "/accounts/logout/", name: "logout" }
+      : { url: "/accounts/login/", name: "login" },
     { url: "/cart", name: "cart" },
   ]);
   return (
@@ -81,7 +85,12 @@ export default function SearchAppBar() {
           >
             MUI
           </Typography>
-          <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: { xs: "none", md: "flex" },
+            }}
+          >
             {navitems.map((item) => (
               <Link
                 href={item.url}

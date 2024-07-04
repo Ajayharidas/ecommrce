@@ -1,0 +1,37 @@
+{% extends '../base.html' %}
+{% load static %}
+{% load i18n %}
+{% load crispy_forms_filters %}
+{% load socialaccount %}
+
+
+{% block head_title %}
+{% trans 'Sign In' %}
+{% endblock %}
+
+
+{% block body %}
+<div class="row my-5"></div>
+<div class="row align-middle m-0 p-0">
+    <div class="col-sm-4"></div>
+    <div class="col-sm-4 login-col-sm">
+        <form action="{% url 'account_login' %}" method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <div class="d-grid">
+                <button type="submit" class="btn login-btn">{% trans 'Login' %}</button>
+            </div>
+        </form>
+        <span>Create new account. <a href="{{ signup_url }}">{% trans 'sign up' %}</a></span>
+    </div>
+    <div class="col-sm-4"></div>
+</div>
+<div class="row align-middle m-0 p-0">
+    <div class="col-sm-4"></div>
+    <div class="col-sm-4">
+        <a href="{% provider_login_url 'google' %}">{% trans 'Login with Google' %}</a>
+        <a href="{% provider_login_url 'facebook' %}">{% trans 'Login with Facebook' %}</a>
+    </div>
+    <div class="col-sm-4"></div>
+</div>
+{% endblock %}

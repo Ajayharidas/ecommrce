@@ -15,14 +15,10 @@ class ProductListView(generic.ListView):
     template_name = "index.html"
 
     def get_queryset(self):
-        return (
-            self.model.objects.all()
-            .filter(
-                Q(category__id=self.kwargs.get("pk"))
-                | Q(category__parent__id=self.kwargs.get("pk"))
-            )
-            .distinct()
-        )
+        return self.model.objects.filter(
+            Q(category__id=self.kwargs.get("pk"))
+            | Q(category__parent__id=self.kwargs.get("pk"))
+        ).distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

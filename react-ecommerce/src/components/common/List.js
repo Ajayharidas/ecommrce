@@ -7,10 +7,16 @@ import ListSubheader from "@mui/material/ListSubheader";
 import Typography from "@mui/material/Typography";
 import Checkbox from "@mui/material/Checkbox";
 
-export default function FilterList({ categories, brands, sizes }) {
+export default function FilterList({
+  categories,
+  brands,
+  sizes,
+  fetchproducts,
+}) {
   const [checkedCategories, setCheckedCategories] = React.useState([]);
   const [checkedBrands, setCheckedBrands] = React.useState([]);
   const [checkedSizes, setCheckedSizes] = React.useState([]);
+  const [filterObjs, setFilterObjs] = React.useState([]);
 
   const handleToggle = (value, item) => () => {
     if (item === "categories") {
@@ -42,6 +48,29 @@ export default function FilterList({ categories, brands, sizes }) {
       setCheckedSizes(newCheckedSizes);
     }
   };
+
+  React.useEffect(() => {
+    fetchproducts({ checkedCategories, checkedBrands, checkedSizes });
+  }, [checkedCategories, checkedBrands, checkedSizes]);
+
+  React.useEffect(() => {
+    if (categories && categories.length > 0) {
+      setFilterObjs([
+        { items: categories, name: "categories", id: 0 },
+        { items: brands, name: "brands", id: 1 },
+        { items: sizes, name: "sizes", id: 2 },
+      ]);
+    } else {
+      setFilterObjs([
+        { items: brands, name: "brands", id: 0 },
+        { items: sizes, name: "sizes", id: 1 },
+      ]);
+    }
+  }, [categories]);
+
+  console.log(checkedBrands);
+  console.log(checkedCategories);
+  console.log(checkedSizes);
   return (
     <List
       sx={{
@@ -50,7 +79,7 @@ export default function FilterList({ categories, brands, sizes }) {
         bgcolor: "background.paper",
         position: "relative",
         overflow: "auto",
-        maxHeight: 300,
+        maxHeight: 350,
         "& ul": { padding: 0 },
         scrollbarWidth: "none",
         borderRight: "0.5px solid #80808040",
@@ -62,11 +91,7 @@ export default function FilterList({ categories, brands, sizes }) {
       }}
       subheader={<li />}
     >
-      {[
-        { items: categories, name: "categories", id: 0 },
-        { items: brands, name: "brands", id: 1 },
-        { items: sizes, name: "sizes", id: 2 },
-      ].map((item) => (
+      {filterObjs.map((item) => (
         <li key={item.id}>
           <ul style={{ padding: "20px 0" }}>
             <ListSubheader>

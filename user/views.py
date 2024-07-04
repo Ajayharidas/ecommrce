@@ -10,8 +10,9 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse, JsonResponse
 import json
-from allauth.account.views import SignupView
+from allauth.account.views import SignupView, LoginView
 from django.utils import timezone
+from allauth.account.forms import LoginForm
 
 
 class HomeView(generic.ListView):
@@ -24,13 +25,26 @@ class HomeView(generic.ListView):
         categories = context[
             "categories"
         ]  # or use default name 'object_list' and remove context_object_name='categories'
-        obj = [
+        user = self.request.user
+        self.request.session["user"] = (
             {
-                "id": category.id,
-                "name": category.name,
+                "id": user.id,
+                "name": user.username,
+                "is_authenticated": user.is_authenticated,
             }
-            for category in categories
-        ]
+            if user.is_authenticated
+            else {"id": None, "name": None, "is_authenticated": False}
+        )
+        obj = {
+            "homedata": [
+                {
+                    "id": category.id,
+                    "name": category.name,
+                }
+                for category in categories
+            ],
+            "sessiondata": self.request.session["user"],
+        }
         context["data"] = json.dumps(obj)
         return context
 

@@ -7,25 +7,25 @@ import React, {
 } from "react";
 
 const EcoContext = createContext({
-  updateCategories: () => {},
+  updateUser: () => {},
 });
 
 export const EcoProvider = ({ children }) => {
-  const [categories, setCategories] = useState([]);
+  const [user, setUser] = useState(null);
 
-  const getCategories = useMemo(
+  const getUser = useMemo(
     () => ({
-      updateCategories: (cats) => {
-        setCategories(cats);
+      updateUser: (data) => {
+        setUser(data);
       },
     }),
-    [categories]
+    [user]
   );
   return (
-    <EcoContext.Provider value={{ getCategories, categories }}>
+    <EcoContext.Provider value={{ getUser, user }}>
       {children}
     </EcoContext.Provider>
   );
 };
 
-export const UseModeContext = () => useContext(EcoContext);
+export const UseEcoContext = () => useContext(EcoContext);
