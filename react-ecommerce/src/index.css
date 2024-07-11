@@ -41,6 +41,7 @@ code {
 }
 .btn:hover{
   background-color: blueviolet!important;
+  color: #fff;
 }
 .btn:focus{
   outline: none!important;
@@ -64,6 +65,19 @@ code {
 .alert-block ul{
   list-style-type: none!important;
 
+}
+
+.third-party-li{
+  list-style-type: none;
+}
+.social-btn{
+  text-align: center;
+  padding: 3%;
+  text-decoration: none;
+  color: black;
+  font-weight: 600;
+  border: 0.5px solid black;
+  display: flex;
 }
 
 

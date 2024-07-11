@@ -1,0 +1,20 @@
+{% extends "socialaccount/base_entrance.html" %}
+{% load i18n %}
+{% load allauth %}
+{% block head_title %}
+    {% trans "Third-Party Login Failure" %}
+{% endblock head_title %}
+{% block content %}
+<div class="row m-0 my-5"></div>
+<div class="row m-0 p-0">
+    <div class="col-sm-4"></div>
+    <div class="col-sm-4 align-middle">
+    <h3>{% trans "Third-Party Login Failure" %}</h3>
+    {% element p %}
+        {% trans "An error occurred while trying to log in with your third-party account." %}
+    {% endelement %}
+    </div>
+    <div class="col-sm-4">
+    </div>
+</div>
+{% endblock content %}

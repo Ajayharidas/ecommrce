@@ -102,9 +102,6 @@ class Cart(models.Model):
     )
     product = models.ForeignKey(ProductSize, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    session_key = models.CharField(max_length=150, blank=True)
 
     def __str__(self):
-        return "{} - {}".format(
-            self.user.get_full_name if self.user else self.session_key, self.product
-        )
+        return "{} - {}".format(self.user.get_full_name(), self.product)

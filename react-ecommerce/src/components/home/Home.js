@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import Link from "@mui/material/Link";
 import { UseEcoContext } from "../../context/EcoContext";
 
 const Home = () => {
-  const { getUser } = UseEcoContext();
   const [categories, setCategories] = useState([]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const jsondata = document.getElementById("data")?.textContent;
 
     if (jsondata) {
@@ -14,7 +13,18 @@ const Home = () => {
         const parsedata = JSON.parse(jsondata);
         console.log(parsedata);
         setCategories(parsedata.homedata);
-        getUser.updateUser(parsedata.sessiondata);
+        if (parsedata.sessiondata["is_authenticated"]) {
+          localStorage.setItem("user", JSON.stringify(parsedata.sessiondata));
+        } else {
+          try {
+            localStorage.removeItem("user");
+          } catch (error) {
+            console.error(
+              "No user instance to remove...",
+              error
+            );
+          }
+        }
       } catch (error) {
         console.error("Error parsing JSON:", error);
       }

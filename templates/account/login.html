@@ -1,37 +1,58 @@
-{% extends '../base.html' %}
-{% load static %}
+{% extends "account/base_entrance.html" %}
 {% load i18n %}
 {% load crispy_forms_filters %}
-{% load socialaccount %}
-
-
+{% load allauth account %}
 {% block head_title %}
-{% trans 'Sign In' %}
-{% endblock %}
-
-
-{% block body %}
-<div class="row my-5"></div>
-<div class="row align-middle m-0 p-0">
+    {% trans "Sign In" %}
+{% endblock head_title %}
+{% block content %}
+<div class="row m-0 my-5"></div>
+<div class="row m-0 p-0">
     <div class="col-sm-4"></div>
-    <div class="col-sm-4 login-col-sm">
-        <form action="{% url 'account_login' %}" method="post">
-            {% csrf_token %}
-            {{ form|crispy }}
-            <div class="d-grid">
-                <button type="submit" class="btn login-btn">{% trans 'Login' %}</button>
-            </div>
-        </form>
-        <span>Create new account. <a href="{{ signup_url }}">{% trans 'sign up' %}</a></span>
+    <div class="col-sm-4 align-middle">
+        {% element h1 %}
+            {% trans "Sign In" %}
+        {% endelement %}
+        {% if not SOCIALACCOUNT_ONLY %}
+            {% setvar link %}
+                <a href="{{ signup_url }}">
+                {% endsetvar %}
+                {% setvar end_link %}
+                </a>
+            {% endsetvar %}
+            {% element p %}
+            {% endelement %}
+            {% url 'account_login' as login_url %}
+            <form action="{{login_url}}" method="post">
+                {% csrf_token %}
+                {{form|crispy}}
+                {{redirect_field}}
+                <div class="d-grid">
+                    <button type="submit" class="btn">{% trans 'Sign In' %}</button>
+                </div>
+            </form>
+            {% blocktranslate %}Create new account. {{ link }}sign up{{ end_link }}{% endblocktranslate %}
+        {% endif %}
+        {% if LOGIN_BY_CODE_ENABLED %}
+            {% element hr %}
+            {% endelement %}
+            {% element h2 %}
+                {% element button href=request_login_code_url tags="prominent,login,secondary" %}
+                    {% trans "Mail me a sign-in code" %}
+                {% endelement %}
+            {% endelement %}
+        {% endif %}
     </div>
-    <div class="col-sm-4"></div>
-</div>
-<div class="row align-middle m-0 p-0">
-    <div class="col-sm-4"></div>
     <div class="col-sm-4">
-        <a href="{% provider_login_url 'google' %}">{% trans 'Login with Google' %}</a>
-        <a href="{% provider_login_url 'facebook' %}">{% trans 'Login with Facebook' %}</a>
+    </div>
+</div>
+<div class="row m-0 mb-5 p-0">
+    <div class="col-sm-4"></div>
+    <div class="col-sm-4 align-middle">
+        {% if SOCIALACCOUNT_ENABLED %}
+            {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+        {% endif %}
     </div>
     <div class="col-sm-4"></div>
 </div>
-{% endblock %}
+{% endblock content %}

@@ -1,0 +1,18 @@
+<li class="third-party-li my-3">
+    {% if attrs.name == 'Google' %}
+        <a title="{{ attrs.name }}" href="{{ attrs.href }}" class="social-btn">
+            <img width="28" height="28" src="https://img.icons8.com/color/48/google-logo.png" alt="google-logo"/>
+            Login with {{ attrs.name }}
+        </a>
+    {% elif attrs.name == 'Facebook' %} 
+        <a title="{{ attrs.name }}" href="{{ attrs.href }}" class="social-btn">
+            <img width="28" height="28" src="https://img.icons8.com/color/48/facebook-circled--v1.png" alt="facebook-circled--v1"/>
+            Login with {{ attrs.name }}
+        </a>
+    {% else %}
+        <a title="{{ attrs.name }}" href="{{ attrs.href }}" class="social-btn">
+            <img width="28" height="28" src="https://img.icons8.com/fluency/48/github.png" alt="github"/>
+            Login with {{attrs.name}}
+        </a>
+    {% endif %}
+</li>

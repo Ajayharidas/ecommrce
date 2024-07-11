@@ -1,0 +1,35 @@
+{% extends '../base.html' %}
+{% load static %}
+{% load i18n %}
+{% load crispy_forms_filters %}
+{% load socialaccount %}
+{% load allauth %}
+
+
+{% block head_title %}
+{% trans 'Sign Up' %}
+{% endblock %}
+
+{% block body %}
+<div class="row my-5"></div>
+<div class="row align-middle m-0 p-0">
+    <div class="col-sm-4"></div>
+    <div class="col-sm-4 d-flex flex-column mb-5">
+        {% element h1 %}
+        {% trans "Sign Up" %}
+        {% endelement %}
+    
+        {% url 'socialaccount_signup' as action_url %}
+        <form action="{{action_url}}" method="post">
+            {% csrf_token %}
+            {{form|crispy}}
+            {{redirect_field}}
+            <div class="d-grid">
+                <button type="submit" class="btn">{% trans 'Sign Up' %}</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-sm-4"></div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "account/base_manage.html" %}
+{% load allauth i18n crispy_forms_filters %}
+{% block head_title %}
+    {% trans "Sign Out" %}
+{% endblock head_title %}
+{% block content %}
+<div class="row m-0 my-5"></div>
+<div class="row m-0 p-0">
+    <div class="col-sm-4"></div>
+    <div class="col-sm-4 align-middle">
+    {% element h1 %}
+        {% trans "Sign Out" %}
+    {% endelement %}
+    {% element p %}
+        {% trans 'Are you sure you want to sign out?' %}
+    {% endelement %}
+    {% url 'account_logout' as action_url %}
+    <form action="{{action_url}}" method="post">
+        {% csrf_token %}
+        {{form|crispy}}
+        <div class="d-grid">
+            <button type="submit" class="btn">{% trans 'Sign Out' %}</button>
+        </div>
+    </form>
+    </div>
+    <div class="col-sm-4">
+    </div>
+</div>
+{% endblock content %}

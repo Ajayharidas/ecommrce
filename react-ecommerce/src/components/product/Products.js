@@ -98,6 +98,7 @@ const Products = () => {
                 <Grid item xl={3} lg={3} md={3} sm={3} xs={4} key={product.id}>
                   <ProductCard
                     id={product.id}
+                    slug={product.slug}
                     name={product.name}
                     price={product.price}
                     image={

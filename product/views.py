@@ -1,3 +1,4 @@
+from lib2to3.fixes.fix_input import context
 from django.db.models.query import QuerySet
 from django.http.response import HttpResponse as HttpResponse
 from django.shortcuts import render
@@ -6,7 +7,7 @@ from brand.models import Brand
 from product.models import Product, ProductImages, ProductSize, Size
 from category.models import Category
 from django.db.models import Count, Q, F, Prefetch
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 import json
 
 
@@ -82,14 +83,28 @@ class ProductListView(generic.ListView):
 
 class ProductDetailView(generic.DetailView):
     model = Product
-    template_name = "product/product.html"
-    context_object_name = "product"
+    template_name = "index.html"
 
-    def get_queryset(self):
-        # change model to productsize and change lookup accordingly
-        product = self.model.objects.filter(slug__iexact=self.kwargs.get("slug"))
-        print(product)
-        return product
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        product = context["product"]
+        product_dict = {
+            "id": product.id,
+            "name": product.name,
+            "slug": product.slug,
+            "brand": {"id": product.brand.id, "name": product.brand.name},
+            "description": product.description,
+            "sizes": [
+                {"id": size.size.id, "name": size.size.name, "stock": size.stock}
+                for size in product.productsize.all()
+            ],
+            "images": [
+                {"id": image.id, "path": str(image.image)}
+                for image in product.productimage.all()
+            ],
+        }
+        context["data"] = json.dumps(product_dict)
+        return context
 
 
 class ProductFilterView(generic.View):

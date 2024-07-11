@@ -10,6 +10,7 @@ import FavoriteBorderOutlinedIcon from "@mui/icons-material/FavoriteBorderOutlin
 import FavoriteOutlinedIcon from "@mui/icons-material/FavoriteOutlined";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
+import { useNavigate } from "react-router-dom";
 
 const CustomCard = styled(Card)(({ theme }) => ({
   boxShadow: "none",
@@ -19,9 +20,15 @@ const CustomCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-export default function ProductCard({ id, name, price, image, brand }) {
+export default function ProductCard({ id, slug, name, price, image, brand }) {
+  const navigate = useNavigate();
   return (
-    <CustomCard key={id}>
+    <CustomCard
+      key={id}
+      onClick={() => {
+        window.location.href = `/product/product/${brand}/${slug}`;
+      }}
+    >
       <CardActionArea>
         <CardMedia
           component="img"

@@ -1,0 +1,62 @@
+{% extends "account/base_entrance.html" %}
+{% load allauth i18n %}
+{% load crispy_forms_filters %}
+{% block head_title %}
+    {% trans "Signup" %}
+{% endblock head_title %}
+{% block content %}
+    <div class="row m-0 my-5"></div>
+    <div class="row m-0 p-0">
+        <div class="col-sm-4"></div>
+        <div class="col-sm-4 align-middle">
+            {% element h1 %}
+                {% trans "Sign Up" %}
+            {% endelement %}
+            {% setvar link %}
+                <a href="{{ login_url }}">
+            {% endsetvar %}
+            {% setvar end_link %}
+                </a>
+            {% endsetvar %}
+            {% if not SOCIALACCOUNT_ONLY %}
+                {% url 'account_signup' as action_url %}
+                <form action="{{action_url}}" method="post">
+                    {% csrf_token %}
+                    {{form|crispy}}
+                    {{redirect_field}}
+                    <div class="d-grid">
+                        <button type="submit" class="btn">{% trans 'Sign Up' %}</button>
+                    </div>
+                </form>
+                {% element p %}
+                    {% blocktranslate %}Already have an account? Then please {{ link }}sign in{{ end_link }}.{% endblocktranslate %}
+                {% endelement %}
+            {% endif %}
+        </div>
+        <div class="col-sm-4">
+        </div>
+    </div>
+    <div class="row m-0 mb-5 p-0">
+        <div class="col-sm-4"></div>
+        <div class="col-sm-4 align-middle">
+            {% if SOCIALACCOUNT_ENABLED %}
+                {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+            {% endif %}
+        </div>
+        <div class="col-sm-4"></div>
+    </div>
+    
+        <!-- {% element form form=form method="post" action=action_url tags="entrance,signup" %}
+            {% slot body %}
+                {% csrf_token %}
+                {% element fields form=form unlabeled=True %}
+                {% endelement %}
+                {{ redirect_field }}
+            {% endslot %}
+            {% slot actions %}
+                {% element button tags="prominent,signup" type="submit" %}
+                    {% trans "Sign Up" %}
+                {% endelement %}
+            {% endslot %}
+        {% endelement %} -->
+{% endblock content %}

@@ -1,18 +1,14 @@
-from django.db.models.query import QuerySet
 from django.shortcuts import redirect, render
 from django.views import generic
 from product.models import Product, ProductSize
 from user.models import CustomUser, Cart
-from user.forms import CustomSignupForm
 from category.models import Category
 from django.utils.translation import gettext_lazy as _
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse, JsonResponse
 import json
-from allauth.account.views import SignupView, LoginView
-from django.utils import timezone
-from allauth.account.forms import LoginForm
+from django.db.models import Q
 
 
 class HomeView(generic.ListView):
@@ -69,32 +65,33 @@ class HomeView(generic.ListView):
     #     return JsonResponse(data, safe=False)
 
 
-class CustomSignupView(SignupView):
-    form_class = CustomSignupForm
-    template_name = "index.html"
+# class CustomSignupView(SignupView):
+#     form_class = CustomSignupForm
+#     template_name = "index.html"
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class AddToCartView(generic.View):
     def cart_operation(self, user=None, *args, **kwargs):
-        print(kwargs)
+        # print(kwargs)
         product = kwargs.get("product")
-        product = ProductSize.objects.get(id=product)
-        session_key = kwargs.get("session_key")
+        size = kwargs.get("size")
+        product = ProductSize.objects.get(product=product, size=size)
         action = kwargs.get("action")
-        print(product, user, session_key, action)
+        # print(product, user, action)
         cart, created = Cart.objects.get_or_create(
             user=user,
             product=product,
-            session_key=session_key,
         )
-        if action and cart:
+        print(created, cart)
+        if action and not created:
             if action == "decrement":
                 if cart.quantity > 0:
                     print(product.stock)
                     cart.quantity -= 1
                     product.stock += 1
             else:
+                print(cart, "hey")
                 cart.quantity += 1
                 product.stock -= 1
 
@@ -105,15 +102,27 @@ class AddToCartView(generic.View):
             cart.save()
             return cart, product.stock
         product.stock -= 1
-        print(product.stock)
+        # print(product.stock)
         product.save()
         return 1, product.stock
 
     def post(self, request, *args, **kwargs):
-        print(request.session.session_key)
+        # print(request.body)
         try:
             data = json.loads(request.body)
+            # productsize_list = []
+            # for i in data:
+            #     productsize_list.append((i["product"]["id"], i["size"]))
+
+            # query = Q()
+            # for id, size in productsize_list:
+            #     query |= Q(product=id, size=size)
+
+            # print(query)
+            # products = ProductSize.objects.filter(query)
+            # print(products)
             product = int(data.get("product"))
+            size = int(data.get("size"))
 
             if product:
                 action = data.get("action")
@@ -121,17 +130,9 @@ class AddToCartView(generic.View):
                     cart, stock = self.cart_operation(
                         user=request.user,
                         product=product,
-                        session_key=request.session.session_key,
+                        size=size,
                         action=action,
                     )
-
-                else:
-                    cart, stock = self.cart_operation(
-                        product=product,
-                        session_key=request.session.session_key,
-                        action=action,
-                    )
-                print(cart)
                 return JsonResponse(
                     {
                         "message": "updated cart successfully",
@@ -152,10 +153,7 @@ class CartView(generic.ListView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return self.model.objects.filter(
-                user=self.request.user, session_key=self.request.session.session_key
-            )
-        return self.model.objects.filter(session_key=self.request.session.session_key)
+            return self.model.objects.filter(user=self.request.user)
 
 
 # class UserRegistrationView(generic.CreateView):

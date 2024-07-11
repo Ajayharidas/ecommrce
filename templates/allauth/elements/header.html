@@ -1,0 +1,48 @@
+{% extends '../layouts/base.html' %}
+
+{% block header %}
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Navbar</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <div class="navbar-nav">
+            {% if user.is_authenticated %}
+                {% url 'account_email' as email_url %}
+                {% if email_url %}
+                    <a class="nav-link" href="{{ email_url }}">{% trans "Change Email" %}</a>
+                {% endif %}
+                {% url 'account_change_password' as change_password_url %}
+                {% if change_password_url %}
+                    <a class="nav-link" href="{{ change_password_url }}">{% trans "Change Password" %}</a>
+                {% endif %}
+                {% url 'mfa_index' as mfa_url %}
+                {% if mfa_url %}
+                    <a class="nav-link" href="{{ mfa_url }}">{% trans "Two-Factor Authentication" %}</a>
+                {% endif %}
+                {% url 'usersessions_list' as usersessions_list_url %}
+                {% if usersessions_list_url %}
+                    <a class="nav-link" href="{{ usersessions_list_url }}">{% trans "Sessions" %}</a>
+                {% endif %}
+                {% url 'account_logout' as logout_url %}
+                {% if logout_url %}
+                    <a class="nav-link" href="{{ logout_url }}">{% trans "Sign Out" %}</a>
+                {% endif %}
+            {% else %}
+                {% url 'account_login' as login_url %}
+                {% if login_url %}
+                    <a class="nav-link" href="{{ login_url }}">{% trans "Sign In" %}</a>
+                {% endif %}
+                {% url 'account_signup' as signup_url %}
+                {% if signup_url %}
+                    <a class="nav-link" href="{{ signup_url }}">{% trans "Sign Up" %}</a>
+                {% endif %}
+            {% endif %}
+        </div>
+      </div>
+    </div>
+</nav>
+{% endblock %}
+
