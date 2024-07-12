@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from product.models import Product, ProductSize
+from django.db.models import Prefetch
 
 
 class CustomUserManager(BaseUserManager):
@@ -97,11 +98,30 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class Cart(models.Model):
+    class CartManager(models.Manager):
+        def get_queryset(self):
+            return (
+                super()
+                .get_queryset()
+                .select_related("product", "user")
+                .prefetch_related(
+                    Prefetch("product__product"),
+                    Prefetch("product__product__brand"),
+                    Prefetch("product__product__productimage"),
+                    Prefetch("product__product__productsize"),
+                    Prefetch("product__product__productsize__size"),
+                    Prefetch("product__size"),
+                )
+            )
+
     user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, blank=True, null=True
+        CustomUser, on_delete=models.CASCADE, blank=True, null=True, related_name="cart"
     )
-    product = models.ForeignKey(ProductSize, on_delete=models.CASCADE)
+    product = models.ForeignKey(
+        ProductSize, on_delete=models.CASCADE, related_name="cart"
+    )
     quantity = models.PositiveIntegerField(default=1)
+    objects = CartManager()
 
     def __str__(self):
         return "{} - {}".format(self.user.get_full_name(), self.product)

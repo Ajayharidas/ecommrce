@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { axiosInstance } from "../components/axios/axios";
 
 const EcoContext = createContext({
   updateUser: () => {},
@@ -15,35 +16,31 @@ export const EcoProvider = ({ children }) => {
   const [user, setUser] = useState({});
   const [cart, setCart] = useState([]);
 
-  // const getUser = useMemo(
-  //   () => ({
-  //     updateUser: (data) => {
-  //       localStorage.setItem("user", JSON.stringify(data));
-  //     },
-  //   }),
-  //   []
-  // );
+  // const postcart = async () => {
+  //   const response = await axiosInstance.post("/add_to_cart", cart);
+  //   if (response) {
+  //     console.log(response.data);
+  //   }
+  // };
 
-  useEffect(() => {
-    const userdata = localStorage.getItem("user");
-    const localdata = localStorage.getItem("cart");
+  // useEffect(() => {
+  //   const userdata = localStorage.getItem("user");
+  //   const localdata = localStorage.getItem("cart");
+  //   console.log(userdata,localdata)
 
-    if (userdata) {
-      setUser(JSON.parse(userdata));
-    }
-    if (localdata) {
-      setCart(JSON.parse(localdata));
-    }
-  }, []);
+  //   if (userdata) {
+  //     setUser(JSON.parse(userdata));
+  //   }
+  //   if (localdata) {
+  //     setCart(JSON.parse(localdata));
+  //   }
+  // }, []);
 
-  // const getCart = useMemo(
-  //   () => ({
-  //     updateCart: (data) => {
-  //       setCart(data);
-  //     },
-  //   }),
-  //   [cart]
-  // );
+  // useEffect(() => {
+  //   if (user && user.is_authenticated) {
+  //     postcart();
+  //   }
+  // }, [cart]);
 
   return (
     <EcoContext.Provider value={{ setUser, user, cart }}>

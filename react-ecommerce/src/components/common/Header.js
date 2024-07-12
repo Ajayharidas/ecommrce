@@ -54,7 +54,15 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function SearchAppBar() {
-  const { user } = UseEcoContext();
+  const [user, setUser] = React.useState(null);
+
+  React.useEffect(() => {
+    const jsonuser = JSON.parse(localStorage.getItem("user"));
+    if (jsonuser) {
+      setUser(jsonuser);
+    }
+  }, []);
+
   const navitems = Object.freeze([
     { url: "/home", name: "home" },
     { url: "/", name: "men" },

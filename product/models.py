@@ -8,6 +8,7 @@ from django.db.models import Prefetch
 
 class Product(models.Model):
     class StockManager(models.Manager):
+
         def get_queryset(self):
             products = (
                 super()
@@ -16,8 +17,8 @@ class Product(models.Model):
                 .prefetch_related(
                     Prefetch("productimage"),
                     Prefetch("productsize"),
-                    Prefetch("category"),
                     Prefetch("productsize__size"),
+                    Prefetch("productsize__cart"),
                 )
             )
             return products

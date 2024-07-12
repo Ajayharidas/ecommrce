@@ -4,14 +4,13 @@ import Box from "@mui/material/Box";
 import CardMedia from "@mui/material/CardMedia";
 import { axiosInstance } from "../axios/axios";
 import { Typography, Tooltip, Button } from "@mui/material";
-import { UseEcoContext } from "../../context/EcoContext";
 
 const Product = () => {
   const [product, setProduct] = React.useState(null);
   const [selectedImage, setSelectedImage] = React.useState(null);
   const sizeRef = React.useRef([]);
   const [newproduct, setNewproduct] = React.useState([]);
-  const { user } = UseEcoContext();
+  const [go, setGo] = React.useState(false);
 
   React.useEffect(() => {
     const jsondata = document.getElementById("data")?.textContent;
@@ -28,40 +27,54 @@ const Product = () => {
 
   const handleToCart = () => {
     console.log(newproduct);
-    if (newproduct) {
+    // const postcart = async () => {
+    //   try {
+    //     const response = await axiosInstance.post(`/add_to_cart`, {
+    //       product: newproduct[0].product.id,
+    //       size: newproduct[0].size,
+    //     });
+    //     if (response.status === 201) {
+    //       console.log(response.data, response.status);
+    //       setGo(true);
+    //     }
+    //   } catch (error) {
+    //     console.error("Error updating cart product...", error);
+    //   }
+    // };
+
+    if (newproduct.length > 0) {
       const localcartdata = JSON.parse(localStorage.getItem("cart"));
+
       if (localcartdata) {
         localStorage.setItem(
           "cart",
           JSON.stringify([...newproduct, ...localcartdata])
         );
-
-        const postcart = async () => {
-          try {
-            const response = await axiosInstance.post(`/add_to_cart`, {
-              product: newproduct[0].product.id,
-              size: newproduct[0].size,
-              action: "increment",
-            });
-            if (response) {
-              console.log(response.data);
-            }
-          } catch (error) {
-            console.error("Error updating cart product...", error);
-          }
-        };
-        if (user && user.is_authenticated) {
-          postcart();
-        }
       } else {
         localStorage.setItem("cart", JSON.stringify(newproduct));
       }
+      // if (user && user.is_authenticated) {
+      //   postcart();
+      // }
     }
   };
 
   const handleSize = (product, size) => {
     console.log(product, size);
     setNewproduct([{ product: product, size: size }]);
+    const localcartdata = JSON.parse(localStorage.getItem("cart"));
+    if (localcartdata) {
+      const exists = localcartdata.some((item) => {
+        return item.product.id === product.id && item.size === size;
+      });
+      if (exists) {
+        setGo(true);
+        alert("You already have this item in the cart...");
+      } else {
+        setGo(false);
+      }
+    }
+
     sizeRef.current.forEach((element, index) => {
       if (element) {
         element.style.backgroundColor =
@@ -230,7 +243,11 @@ const Product = () => {
                 sx={{ width: "100%" }}
                 px={{ xl: 25, xs: 10 }}
               >
-                <Button onClick={handleToCart}>Add to cart</Button>
+                {go ? (
+                  <Button>Go to cart</Button>
+                ) : (
+                  <Button onClick={handleToCart}>Add to cart</Button>
+                )}
               </Grid>
             </Grid>
           </Grid>

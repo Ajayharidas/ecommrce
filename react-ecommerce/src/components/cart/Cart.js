@@ -1,39 +1,64 @@
 import React from "react";
 import { axiosInstance } from "../axios/axios";
-import { UseEcoContext } from "../../context/EcoContext";
 
 export const Cart = () => {
-  const { user, cart } = UseEcoContext();
+  const [cart, setCart] = React.useState([]);
+  const [user, setUser] = React.useState(null);
 
   React.useEffect(() => {
-    const postcart = async () => {
-      try {
-        const response = await axiosInstance.post(`/add_to_cart`, cart);
-        if (response) {
-          console.log(response.data);
-        }
-      } catch (error) {
-        console.error("Error in updating cart", error);
-      }
-    };
-    if (cart && user && user.is_authenticated) {
-      postcart();
-    }
-  }, [user, cart]);
+    if (user && user.is_authenticated) {
+      const jsondata = document.getElementById("data")?.textContent;
 
-  console.log(user, cart);
+      if (jsondata) {
+        console.log(jsondata);
+        const parsedata = JSON.parse(jsondata);
+        setCart(parsedata);
+      }
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    const jsonuser = JSON.parse(localStorage.getItem("user"));
+    if (jsonuser) {
+      setUser(jsonuser);
+    }
+  }, []);
+
   return (
     <>
       <h1>Cart</h1>
-      {/* <div>
-        {data.cart && data.cart.length > 0 ? (
-          data.cart.map((item) => {
-            return <h4>{item.product.name}</h4>;
+      <div>
+        {cart && cart.length > 0 ? (
+          cart.map((item) => {
+            return (
+              <div>
+                <h4 key={item.id}>{item.name}</h4>
+                <select name="sizes" id="sizes">
+                  {item.sizes.sizes.map((size) => {
+                    return item.sizes.selectedsize.id === size.id ? (
+                      <option value={size.id} key={size.id} selected>
+                        {size.name}
+                      </option>
+                    ) : (
+                      <option value={size.id} key={size.id}>
+                        {size.name}
+                      </option>
+                    );
+                  })}
+                </select>
+                <span>
+                  <button>-</button>
+                  {/* add ref */}
+                  <input type="number" value={item.quantity}/>
+                  <button>+</button>
+                </span>
+              </div>
+            );
           })
         ) : (
           <p>Cart is empty</p>
         )}
-      </div> */}
+      </div>
     </>
   );
 };

@@ -13,18 +13,7 @@ const Home = () => {
         const parsedata = JSON.parse(jsondata);
         console.log(parsedata);
         setCategories(parsedata.homedata);
-        if (parsedata.sessiondata["is_authenticated"]) {
-          localStorage.setItem("user", JSON.stringify(parsedata.sessiondata));
-        } else {
-          try {
-            localStorage.removeItem("user");
-          } catch (error) {
-            console.error(
-              "No user instance to remove...",
-              error
-            );
-          }
-        }
+        localStorage.setItem("user", JSON.stringify(parsedata.sessiondata));
       } catch (error) {
         console.error("Error parsing JSON:", error);
       }
