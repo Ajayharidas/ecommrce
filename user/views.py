@@ -49,36 +49,53 @@ class HomeView(generic.ListView):
 @method_decorator(csrf_exempt, name="dispatch")
 class AddToCartView(generic.View):
     def post(self, request, *args, **kwargs):
-        # print(request.body)
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"message": "You must be logged in to perform this action"}, status=403
+            )
+
         try:
             data = json.loads(request.body)
-            query = Q()
-            for i in data:
-                query |= Q(product=i["product"]["id"], size=i["size"])
-
-            if query:
-                if request.user.is_authenticated:
-                    products = ProductSize.objects.filter(query)
-
-                    if products:
-                        for product in products:
-                            if not Cart.objects.filter(
-                                user=request.user, product=product
-                            ).exists():
-                                Cart.objects.create(user=request.user, product=product)
-                        return JsonResponse(
-                            {
-                                "message": "updated cart successfully",
-                            },
-                            status=201,
-                        )
-                return JsonResponse(
-                    {"message": "You don't have permission to perform this action"},
-                    status=403,
-                )
         except json.JSONDecodeError:
-            print("hi")
             return JsonResponse({"message": "Invalid JSON data"}, status=400)
+
+        query = Q()
+        for item in data:
+            query |= Q(product_id=item["product"]["id"], size_id=item["selectedsize"])
+
+        if query:
+            products = ProductSize.objects.filter(query)
+
+            if products:
+                # Get all products already in the user's cart
+                existing_cart_products = Cart.objects.filter(
+                    user=request.user, product__in=products
+                ).values_list("product_id", flat=True)
+                print(existing_cart_products)
+
+                # Determine which products are not in the cart
+                products_to_add = [
+                    product
+                    for product in products
+                    if product.id not in existing_cart_products
+                ]
+                print(products_to_add)
+
+                # Bulk create new cart entries
+                Cart.objects.bulk_create(
+                    [
+                        Cart(user=request.user, product=product)
+                        for product in products_to_add
+                    ]
+                )
+
+                return JsonResponse(
+                    {"message": "Updated cart successfully"}, status=201
+                )
+
+            return JsonResponse({"message": "No matching products found"}, status=404)
+
+        return JsonResponse({"message": "Empty request"}, status=400)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -99,22 +116,20 @@ class CartView(generic.ListView):
                         "desciption": item.product.product.description,
                         "slug": item.product.product.slug,
                         "price": item.product.product.price,
+                        "brand": {
+                            "id": item.product.product.brand.id,
+                            "name": item.product.product.brand.name,
+                        },
+                        "images": [
+                            {"id": int(image.id), "path": str(image.image)}
+                            for image in item.product.product.productimage.all()
+                        ],
+                        "sizes": [
+                            {"id": size.size.id, "name": size.size.name}
+                            for size in item.product.product.productsize.all()
+                        ],
                     },
-                    "brand": {
-                        "id": item.product.product.brand.id,
-                        "name": item.product.product.brand.name,
-                    },
-                    "images": [
-                        {"id": int(image.id), "path": str(image.image)}
-                        for image in item.product.product.productimage.all()
-                    ],
-                    "sizes": [
-                        {"id": size.size.id, "name": size.size.name}
-                        for size in item.product.product.productsize.all()
-                    ],
-                    "selectedsize": {
-                        "id": item.product.size.id,
-                    },
+                    "selectedsize": item.product.size.id,
                     "quantity": item.quantity,
                 }
                 for item in products

@@ -27,22 +27,21 @@ const Product = () => {
 
   const handleToCart = () => {
     console.log(newproduct);
-    // const postcart = async () => {
-    //   try {
-    //     const response = await axiosInstance.post(`/add_to_cart`, {
-    //       product: newproduct[0].product.id,
-    //       size: newproduct[0].size,
-    //     });
-    //     if (response.status === 201) {
-    //       console.log(response.data, response.status);
-    //       setGo(true);
-    //     }
-    //   } catch (error) {
-    //     console.error("Error updating cart product...", error);
-    //   }
-    // };
 
     if (newproduct.length > 0) {
+      const localuserdata = JSON.parse(localStorage.getItem("user"));
+      if (localuserdata && localuserdata.is_authenticated) {
+        const postcart = async () => {
+          const response = await axiosInstance.post("/add_to_cart", newproduct);
+          if (response) {
+            console.log(response.data);
+            if (response.status === 201) {
+              localStorage.removeItem("cart");
+            }
+          }
+        };
+        postcart();
+      }
       const localcartdata = JSON.parse(localStorage.getItem("cart"));
 
       if (localcartdata) {
@@ -53,19 +52,16 @@ const Product = () => {
       } else {
         localStorage.setItem("cart", JSON.stringify(newproduct));
       }
-      // if (user && user.is_authenticated) {
-      //   postcart();
-      // }
     }
   };
 
   const handleSize = (product, size) => {
     console.log(product, size);
-    setNewproduct([{ product: product, size: size }]);
+    setNewproduct([{ product: product, selectedsize: size, quantity: 1 }]);
     const localcartdata = JSON.parse(localStorage.getItem("cart"));
     if (localcartdata) {
       const exists = localcartdata.some((item) => {
-        return item.product.id === product.id && item.size === size;
+        return item.product.id === product.id && item.selectedsize === size;
       });
       if (exists) {
         setGo(true);
