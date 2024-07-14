@@ -2,8 +2,9 @@ import React from "react";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import CardMedia from "@mui/material/CardMedia";
-import { axiosInstance } from "../axios/axios";
 import { Typography, Tooltip, Button } from "@mui/material";
+import { UseEcoContext } from "../../context/EcoContext";
+import { axiosInstance } from "../axios/axios";
 
 const Product = () => {
   const [product, setProduct] = React.useState(null);
@@ -11,54 +12,75 @@ const Product = () => {
   const sizeRef = React.useRef([]);
   const [newproduct, setNewproduct] = React.useState([]);
   const [go, setGo] = React.useState(false);
+  const { postcart } = UseEcoContext();
 
   React.useEffect(() => {
-    const jsondata = document.getElementById("data")?.textContent;
-    if (jsondata) {
-      try {
+    try {
+      const jsondata = document.getElementById("data")?.textContent;
+      if (jsondata) {
         const parsedata = JSON.parse(jsondata);
         setProduct(parsedata);
         setSelectedImage(parsedata.images[0].path);
-      } catch (error) {
-        console.error("Error in fetching product data : ", error);
       }
+    } catch (error) {
+      console.error("Error in fetching product data : ", error);
     }
   }, []);
 
   const handleToCart = () => {
-    console.log(newproduct);
-
     if (newproduct.length > 0) {
       const localuserdata = JSON.parse(localStorage.getItem("user"));
-      if (localuserdata && localuserdata.is_authenticated) {
-        const postcart = async () => {
-          const response = await axiosInstance.post("/add_to_cart", newproduct);
-          if (response) {
-            console.log(response.data);
-            if (response.status === 201) {
-              localStorage.removeItem("cart");
-            }
-          }
-        };
-        postcart();
-      }
       const localcartdata = JSON.parse(localStorage.getItem("cart"));
 
-      if (localcartdata) {
-        localStorage.setItem(
-          "cart",
-          JSON.stringify([...newproduct, ...localcartdata])
-        );
+      if (localuserdata && localuserdata.is_authenticated) {
+        postcart(newproduct);
       } else {
-        localStorage.setItem("cart", JSON.stringify(newproduct));
+        if (localcartdata) {
+          localStorage.setItem(
+            "cart",
+            JSON.stringify([...newproduct, ...localcartdata])
+          );
+        } else {
+          localStorage.setItem("cart", JSON.stringify(newproduct));
+        }
       }
     }
   };
 
+  React.useEffect(() => {
+    const localuserdata = JSON.parse(localStorage.getItem("user"));
+    if (localuserdata && localuserdata.is_authenticated) {
+      if (newproduct.length > 0) {
+        const checkcart = async () => {
+          try {
+            const response = await axiosInstance.get(`/add_to_cart`, {
+              params: {
+                product: newproduct[0].product.id,
+                selectedsize: newproduct[0].selectedsize,
+              },
+            });
+            if (response) {
+              console.log(response.data.message);
+              if (response.data.message === true) {
+                setGo(true);
+                alert("You already have this item in the cart...");
+              } else {
+                setGo(false);
+              }
+            }
+          } catch (error) {
+            console.error("Error in cart check...", error);
+          }
+        };
+        checkcart();
+      }
+    }
+  }, [newproduct]);
+
   const handleSize = (product, size) => {
-    console.log(product, size);
-    setNewproduct([{ product: product, selectedsize: size, quantity: 1 }]);
     const localcartdata = JSON.parse(localStorage.getItem("cart"));
+    setNewproduct([{ product: product, selectedsize: size, quantity: 1 }]);
+
     if (localcartdata) {
       const exists = localcartdata.some((item) => {
         return item.product.id === product.id && item.selectedsize === size;

@@ -10,16 +10,18 @@ import Home from "./components/home/Home";
 import Products from "./components/product/Products";
 import Product from "./components/product/Product";
 import { Cart } from "./components/cart/Cart";
-import React, { useState, useEffect,useLayoutEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import { axiosInstance } from "./components/axios/axios";
+import { UseEcoContext } from "./context/EcoContext";
 
 function App() {
-  const [user, setUser] = React.useState([]);
-  const [cart, setCart] = React.useState([]);
+  const [user, setUser] = useState([]);
+  const [cart, setCart] = useState([]);
+  const { postcart } = UseEcoContext();
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const jsonuser = JSON.parse(localStorage.getItem("user"));
     const jsoncart = JSON.parse(localStorage.getItem("cart"));
     if (jsonuser) {
@@ -30,21 +32,10 @@ function App() {
     }
   }, []);
 
-  useLayoutEffect(() => {
-    const postcart = async () => {
-      const response = await axiosInstance.post("/add_to_cart", cart);
-      if (response) {
-        console.log(response.data);
-        if (response.status === 201) {
-          localStorage.removeItem("cart");
-        }
-      }
-    };
-
-    console.log(user, cart);
+  useEffect(() => {
     if (user && user.is_authenticated) {
       if (cart && cart.length > 0) {
-        postcart();
+        postcart(cart);
       }
     }
   }, [cart]);

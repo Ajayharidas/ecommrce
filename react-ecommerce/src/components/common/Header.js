@@ -9,7 +9,6 @@ import InputBase from "@mui/material/InputBase";
 import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import Link from "@mui/material/Link";
-import { UseEcoContext } from "../../context/EcoContext";
 
 const Search = styled("div")(({ theme }) => ({
   position: "absolute",
@@ -119,6 +118,7 @@ export default function SearchAppBar() {
             <StyledInputBase
               placeholder="Search…"
               inputProps={{ "aria-label": "search" }}
+              id="search-form-id"
             />
           </Search>
         </Toolbar>

@@ -1,24 +1,48 @@
 import React from "react";
 import { axiosInstance } from "../axios/axios";
 
+const updateqty = async (data) => {
+  console.log(data.quantity, data.user, data.product, data.size, data.cart);
+  try {
+    if (data.user && data.user.is_authenticated) {
+      const response = await axiosInstance.post(`/update_qty`, {
+        product: data.product,
+        size: data.size,
+        quantity: data.quantity,
+      });
+      if (response) {
+        console.log(response.data.message);
+      }
+    } else {
+      const updatedcart = data.cart.map((item) => {
+        return item.product.id === data.product &&
+          item.selectedsize === data.size
+          ? { ...item, quantity: data.quantity }
+          : item;
+      });
+      if (updatedcart && updatedcart.length > 0) {
+        console.log(updatedcart);
+        localStorage.setItem("cart", JSON.stringify(updatedcart));
+      }
+    }
+  } catch (error) {
+    console.error("Error updating quantity...", error);
+  }
+};
+
 const reducer = (state, action) => {
   switch (action.type) {
-    case "init":
+    case "INIT":
       return action.payload;
-    case "set":
-      return state.map((item) =>
-        item.id === action.id ? { ...item, quantity: action.quantity } : item
-      );
-    case "add":
-      return state.map((item) =>
-        item.id === action.id ? { ...item, quantity: item.quantity + 1 } : item
-      );
-    case "sub":
-      return state.map((item) =>
-        item.id === action.id && item.quantity > 1
-          ? { ...item, quantity: item.quantity - 1 }
-          : item
-      );
+    case "SET_QTY":
+      const updatestate = state.map((item) => {
+        if (item.id === action.id) {
+          updateqty(action.data);
+          return { ...item, quantity: action.data.quantity };
+        }
+        return item;
+      });
+      return updatestate;
     default:
       throw new Error(`Unknown action type : ${action.type}`);
   }
@@ -35,14 +59,13 @@ export const Cart = () => {
       const jsondata = document.getElementById("data")?.textContent;
 
       if (jsondata) {
-        console.log(jsondata);
         const parsedata = JSON.parse(jsondata);
         setCart(parsedata);
         const initialdata = parsedata.map((item) => ({
           id: `${item.product.id}-${item.selectedsize}`,
           quantity: item.quantity,
         }));
-        dispatch({ type: "init", payload: initialdata });
+        dispatch({ type: "INIT", payload: initialdata });
       }
     }
   }, [user]);
@@ -59,13 +82,14 @@ export const Cart = () => {
         id: `${item.product.id}-${item.selectedsize}`,
         quantity: item.quantity,
       }));
-      dispatch({ type: "init", payload: initialdata });
+      dispatch({ type: "INIT", payload: initialdata });
     }
   }, []);
 
-  console.log(cart);
-  // console.log(inputRef);
-  // console.log(quantity);
+  const findmax = (sizes, selsize) => {
+    const size = sizes.find((size) => selsize === size.id);
+    return size ? size.stock : 10;
+  };
 
   return (
     <>
@@ -76,10 +100,11 @@ export const Cart = () => {
             const uniqueId = `${item.product.id}-${item.selectedsize}`;
             const quantityItem = quantity.find((q) => q.id === uniqueId);
             const currentQuantity = quantityItem ? quantityItem.quantity : 1;
+            const maxQuantity = findmax(item.product.sizes, item.selectedsize);
             return (
               <div>
-                <h4 key={item.product.id}>{item.product.name}</h4>
-                <select name="sizes" id="sizes">
+                <h4 key={uniqueId}>{item.product.name}</h4>
+                <select name="sizes" className="sizes">
                   {item.product.sizes.map((size) => {
                     return item.selectedsize === size.id ? (
                       <option value={size.id} key={size.id} selected>
@@ -93,28 +118,28 @@ export const Cart = () => {
                   })}
                 </select>
                 <span>
-                  <button
-                    onClick={() => dispatch({ type: "sub", id: uniqueId })}
-                  >
-                    -
-                  </button>
                   <input
                     type="number"
                     value={currentQuantity}
                     ref={(e) => (inputRef.current[index] = e)}
                     onChange={(e) =>
                       dispatch({
-                        type: "set",
-                        id: item.product.id,
-                        quantity: parseInt(e.target.value, 10),
+                        type: "SET_QTY",
+                        id: uniqueId,
+                        data: {
+                          quantity: parseInt(e.target.value, 10),
+                          user: user,
+                          cart: cart,
+                          product: item.product.id,
+                          size: item.selectedsize,
+                        },
                       })
                     }
+                    className="cart-qty-input"
+                    name={`${uniqueId}`}
+                    min={1}
+                    max={maxQuantity}
                   />
-                  <button
-                    onClick={() => dispatch({ type: "add", id: uniqueId })}
-                  >
-                    +
-                  </button>
                 </span>
               </div>
             );
