@@ -2,7 +2,6 @@ import React from "react";
 import { axiosInstance } from "../axios/axios";
 
 const updateqty = async (data) => {
-  console.log(data.quantity, data.user, data.product, data.size, data.cart);
   try {
     if (data.user && data.user.is_authenticated) {
       const response = await axiosInstance.post(`/update_qty`, {
@@ -52,7 +51,7 @@ export const Cart = () => {
   const [cart, setCart] = React.useState([]);
   const [user, setUser] = React.useState(null);
   const [quantity, dispatch] = React.useReducer(reducer, []);
-  const inputRef = React.useRef([]);
+  const [selectedSizes, setSelectedSizes] = React.useState({});
 
   React.useEffect(() => {
     if (user && user.is_authenticated) {
@@ -91,6 +90,47 @@ export const Cart = () => {
     return size ? size.stock : 10;
   };
 
+  const handleSize = async (
+    event,
+    uniqueid,
+    cartid,
+    productid,
+    selectedsizeid
+  ) => {
+    const newSize = parseInt(event.target.value, 10);
+    setSelectedSizes((prevSizes) => ({
+      ...prevSizes,
+      [uniqueid]: newSize,
+    }));
+    if (user && user.is_authenticated) {
+      if (cartid) {
+        try {
+          const response = await axiosInstance.post(`/update_size`, {
+            cartid: cartid,
+            sizeid: newSize,
+            productid: productid,
+          });
+          if (response) {
+            console.log(response.data.message);
+          }
+        } catch (error) {
+          console.error("Error updating size....", error);
+        }
+      }
+    } else {
+      const updatedcart = cart.map((item) => {
+        return item.product.id === productid &&
+          item.selectedsize === selectedsizeid
+          ? { ...item, selectedsize: newSize }
+          : item;
+      });
+      if (updatedcart) {
+        console.log(updatedcart);
+        localStorage.setItem("cart", JSON.stringify(updatedcart));
+      }
+    }
+  };
+
   return (
     <>
       <h1>Cart</h1>
@@ -101,16 +141,26 @@ export const Cart = () => {
             const quantityItem = quantity.find((q) => q.id === uniqueId);
             const currentQuantity = quantityItem ? quantityItem.quantity : 1;
             const maxQuantity = findmax(item.product.sizes, item.selectedsize);
+
             return (
               <div>
                 <h4 key={uniqueId}>{item.product.name}</h4>
-                <select name="sizes" className="sizes">
+                <select
+                  name="sizes"
+                  className="sizes"
+                  value={selectedSizes[uniqueId] || item.selectedsize}
+                  onChange={(e) =>
+                    handleSize(
+                      e,
+                      uniqueId,
+                      item.id ? item.id : null,
+                      item.product.id,
+                      item.selectedsize
+                    )
+                  }
+                >
                   {item.product.sizes.map((size) => {
-                    return item.selectedsize === size.id ? (
-                      <option value={size.id} key={size.id} selected>
-                        {size.name}
-                      </option>
-                    ) : (
+                    return (
                       <option value={size.id} key={size.id}>
                         {size.name}
                       </option>
@@ -121,7 +171,6 @@ export const Cart = () => {
                   <input
                     type="number"
                     value={currentQuantity}
-                    ref={(e) => (inputRef.current[index] = e)}
                     onChange={(e) =>
                       dispatch({
                         type: "SET_QTY",

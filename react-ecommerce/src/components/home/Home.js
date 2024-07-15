@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import Link from "@mui/material/Link";
-import { UseEcoContext } from "../../context/EcoContext";
 
 const Home = () => {
   const [categories, setCategories] = useState([]);

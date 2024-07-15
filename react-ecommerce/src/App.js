@@ -13,7 +13,6 @@ import { Cart } from "./components/cart/Cart";
 import React, { useState, useEffect } from "react";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
-import { axiosInstance } from "./components/axios/axios";
 import { UseEcoContext } from "./context/EcoContext";
 
 function App() {

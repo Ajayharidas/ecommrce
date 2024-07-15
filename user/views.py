@@ -227,3 +227,35 @@ class UpdateQTYView(generic.View):
                 return JsonResponse({"message": "No cart item found..."}, status=404)
             return JsonResponse({"message": "No matching product found..."}, status=404)
         return HttpResponse({"message": "Invalid JSON data...."}, status=400)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class UpdateSizeView(generic.View):
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"message": "You must be logged in to perform this action"}, status=403
+            )
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON data"}, status=400)
+
+        cartid = data["cartid"]
+        sizeid = data["sizeid"]
+        productid = data["productid"]
+
+        if cartid and sizeid and productid:
+            product = ProductSize.objects.get(product__id=productid, size__id=sizeid)
+            if product:
+                cart_obj = Cart.objects.filter(id=cartid, user=request.user).first()
+                if cart_obj:
+                    cart_obj.product = product
+                    cart_obj.save()
+                    return JsonResponse(
+                        {"message": "Size updated successfully..."}, status=200
+                    )
+                return JsonResponse({"message": "No cart item found..."}, status=404)
+            return JsonResponse({"message": "No matching product found..."}, status=404)
+        return HttpResponse({"message": "Invalid JSON data...."}, status=400)

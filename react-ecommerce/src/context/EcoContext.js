@@ -1,9 +1,6 @@
 import React, {
-  useEffect,
   createContext,
   useContext,
-  useMemo,
-  useState,
 } from "react";
 import { axiosInstance } from "../components/axios/axios";
 
