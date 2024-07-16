@@ -125,3 +125,21 @@ class Cart(models.Model):
 
     def __str__(self):
         return "{} - {}".format(self.user.get_full_name(), self.product)
+
+
+class Wishlist(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Wishlist of {self.user.username}"
+
+
+class WishlistItem(models.Model):
+    wishlist = models.ForeignKey(
+        Wishlist, related_name="items", on_delete=models.CASCADE
+    )
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.name} in {self.wishlist.user.username}'s wishlist"

@@ -20,7 +20,6 @@ const updateqty = async (data) => {
           : item;
       });
       if (updatedcart && updatedcart.length > 0) {
-        console.log(updatedcart);
         localStorage.setItem("cart", JSON.stringify(updatedcart));
       }
     }
@@ -29,19 +28,57 @@ const updateqty = async (data) => {
   }
 };
 
+const updatesize = async (data) => {
+  try {
+    if (data.user && data.user.is_authenticated) {
+      if (data.cartid) {
+        const response = await axiosInstance.post(`/update_size`, {
+          cartid: data.cartid,
+          sizeid: data.size,
+          productid: data.productid,
+        });
+        if (response) {
+          console.log(response.data.message);
+        }
+      }
+    } else {
+      const updatedcart = data.cart.map((item) => {
+        return item.product.id === data.product &&
+          item.selectedsize === data.size
+          ? { ...item, selectedsize: data.selectedsize }
+          : item;
+      });
+      if (updatedcart) {
+        localStorage.setItem("cart", JSON.stringify(updatedcart));
+      }
+    }
+  } catch (error) {
+    console.error("Error updating size....", error);
+  }
+};
+
 const reducer = (state, action) => {
   switch (action.type) {
     case "INIT":
       return action.payload;
     case "SET_QTY":
-      const updatestate = state.map((item) => {
+      const updateqtystate = state.map((item) => {
         if (item.id === action.id) {
           updateqty(action.data);
           return { ...item, quantity: action.data.quantity };
         }
         return item;
       });
-      return updatestate;
+      return updateqtystate;
+    case "SET_SIZE":
+      const updatesizestate = state.map((item) => {
+        if (item.id === action.id) {
+          updatesize(action.data);
+          return { ...item, size: action.data.selectedsize };
+        }
+        return item;
+      });
+      return updatesizestate;
     default:
       throw new Error(`Unknown action type : ${action.type}`);
   }
@@ -50,8 +87,7 @@ const reducer = (state, action) => {
 export const Cart = () => {
   const [cart, setCart] = React.useState([]);
   const [user, setUser] = React.useState(null);
-  const [quantity, dispatch] = React.useReducer(reducer, []);
-  const [selectedSizes, setSelectedSizes] = React.useState({});
+  const [updatablecart, dispatch] = React.useReducer(reducer, []);
 
   React.useEffect(() => {
     if (user && user.is_authenticated) {
@@ -63,6 +99,7 @@ export const Cart = () => {
         const initialdata = parsedata.map((item) => ({
           id: `${item.product.id}-${item.selectedsize}`,
           quantity: item.quantity,
+          size: item.selectedsize,
         }));
         dispatch({ type: "INIT", payload: initialdata });
       }
@@ -80,6 +117,7 @@ export const Cart = () => {
       const initialdata = jsoncart.map((item) => ({
         id: `${item.product.id}-${item.selectedsize}`,
         quantity: item.quantity,
+        size: item.selectedsize,
       }));
       dispatch({ type: "INIT", payload: initialdata });
     }
@@ -90,47 +128,6 @@ export const Cart = () => {
     return size ? size.stock : 10;
   };
 
-  const handleSize = async (
-    event,
-    uniqueid,
-    cartid,
-    productid,
-    selectedsizeid
-  ) => {
-    const newSize = parseInt(event.target.value, 10);
-    setSelectedSizes((prevSizes) => ({
-      ...prevSizes,
-      [uniqueid]: newSize,
-    }));
-    if (user && user.is_authenticated) {
-      if (cartid) {
-        try {
-          const response = await axiosInstance.post(`/update_size`, {
-            cartid: cartid,
-            sizeid: newSize,
-            productid: productid,
-          });
-          if (response) {
-            console.log(response.data.message);
-          }
-        } catch (error) {
-          console.error("Error updating size....", error);
-        }
-      }
-    } else {
-      const updatedcart = cart.map((item) => {
-        return item.product.id === productid &&
-          item.selectedsize === selectedsizeid
-          ? { ...item, selectedsize: newSize }
-          : item;
-      });
-      if (updatedcart) {
-        console.log(updatedcart);
-        localStorage.setItem("cart", JSON.stringify(updatedcart));
-      }
-    }
-  };
-
   return (
     <>
       <h1>Cart</h1>
@@ -138,8 +135,15 @@ export const Cart = () => {
         {cart && cart.length > 0 ? (
           cart.map((item, index) => {
             const uniqueId = `${item.product.id}-${item.selectedsize}`;
-            const quantityItem = quantity.find((q) => q.id === uniqueId);
-            const currentQuantity = quantityItem ? quantityItem.quantity : 1;
+            const updatablecartItem = updatablecart.find(
+              (q) => q.id === uniqueId
+            );
+            const currentQuantity = updatablecartItem
+              ? updatablecartItem.quantity
+              : 1;
+            const currentSize = updatablecartItem
+              ? updatablecartItem.size
+              : item.selectedsize;
             const maxQuantity = findmax(item.product.sizes, item.selectedsize);
 
             return (
@@ -148,15 +152,20 @@ export const Cart = () => {
                 <select
                   name="sizes"
                   className="sizes"
-                  value={selectedSizes[uniqueId] || item.selectedsize}
+                  value={currentSize}
                   onChange={(e) =>
-                    handleSize(
-                      e,
-                      uniqueId,
-                      item.id ? item.id : null,
-                      item.product.id,
-                      item.selectedsize
-                    )
+                    dispatch({
+                      type: "SET_SIZE",
+                      id: uniqueId,
+                      data: {
+                        selectedsize: parseInt(e.target.value, 10),
+                        user: user,
+                        cart: cart,
+                        cartid: item.id ? item.id : null,
+                        product: item.product.id,
+                        size: currentSize,
+                      },
+                    })
                   }
                 >
                   {item.product.sizes.map((size) => {

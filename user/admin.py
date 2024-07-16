@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from user.models import CustomUser, Cart
-from django.forms import TextInput, Textarea, CharField
+from user.models import CustomUser, Cart, Wishlist, WishlistItem
+from django.forms import Textarea
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -50,3 +50,5 @@ class CustomAdminConfig(UserAdmin):
 
 admin.site.register(CustomUser, CustomAdminConfig)
 admin.site.register(Cart)
+admin.site.register(Wishlist)
+admin.site.register(WishlistItem)

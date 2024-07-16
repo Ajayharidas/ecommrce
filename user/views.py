@@ -1,7 +1,7 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views import generic
 from product.models import Product, ProductSize
-from user.models import CustomUser, Cart
+from user.models import CustomUser, Cart, Wishlist, WishlistItem
 from category.models import Category
 from django.utils.translation import gettext_lazy as _
 from django.utils.decorators import method_decorator
@@ -44,6 +44,39 @@ class HomeView(generic.ListView):
         }
         context["data"] = json.dumps(obj)
         return context
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class AddToWishlist(generic.CreateView):
+    def post(self, request, *args, **kwargs):
+
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"message": "You must be logged in to perform this action"}, status=403
+            )
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON data"}, status=400)
+
+        user = request.user
+        product_id = data.get("product")
+        if product_id is None:
+            return JsonResponse({"message": "Product ID is required"}, status=400)
+
+        product = get_object_or_404(Product, pk=product_id)
+        wishlist, created = Wishlist.objects.get_or_create(user=user)
+        item, created = WishlistItem.objects.get_or_create(
+            wishlist=wishlist, product=product
+        )
+        if created:
+            return JsonResponse(
+                {"message": "Product added to wishlist...."}, status=201
+            )
+        return JsonResponse(
+            {"message": "Product already in your wishlist..."}, status=200
+        )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
