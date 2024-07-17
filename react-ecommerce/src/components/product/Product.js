@@ -53,7 +53,7 @@ const Product = () => {
       if (newproduct.length > 0) {
         const checkcart = async () => {
           try {
-            const response = await axiosInstance.get(`/add_to_cart`, {
+            const response = await axiosInstance.get(`/check_cart_item`, {
               params: {
                 product: newproduct[0].product.id,
                 selectedsize: newproduct[0].selectedsize,

@@ -11,6 +11,8 @@ const updateqty = async (data) => {
       });
       if (response) {
         console.log(response.data.message);
+        console.log(response.data.cart);
+        return JSON.parse(response.data.cart);
       }
     } else {
       const updatedcart = data.cart.map((item) => {
@@ -19,9 +21,7 @@ const updateqty = async (data) => {
           ? { ...item, quantity: data.quantity }
           : item;
       });
-      if (updatedcart && updatedcart.length > 0) {
-        localStorage.setItem("cart", JSON.stringify(updatedcart));
-      }
+      return updatedcart;
     }
   } catch (error) {
     console.error("Error updating quantity...", error);
@@ -33,27 +33,57 @@ const updatesize = async (data) => {
     if (data.user && data.user.is_authenticated) {
       if (data.cartid) {
         const response = await axiosInstance.post(`/update_size`, {
-          cartid: data.cartid,
-          sizeid: data.size,
-          productid: data.productid,
+          cart: data.cartid,
+          size: data.selectedsize,
+          product: data.product,
         });
         if (response) {
           console.log(response.data.message);
+          console.log(response.data.cart);
+          return JSON.parse(response.data.cart);
         }
       }
     } else {
       const updatedcart = data.cart.map((item) => {
         return item.product.id === data.product &&
           item.selectedsize === data.size
-          ? { ...item, selectedsize: data.selectedsize }
+          ? {
+              ...item,
+              quantity:
+                item.quantity > data.maxqty
+                  ? data.maxqty
+                  : item.quantity,
+              selectedsize: data.selectedsize,
+            }
           : item;
       });
-      if (updatedcart) {
-        localStorage.setItem("cart", JSON.stringify(updatedcart));
-      }
+      return updatedcart;
     }
   } catch (error) {
     console.error("Error updating size....", error);
+  }
+};
+
+const removecartitem = async (data) => {
+  try {
+    if (data.user && data.user.is_authenticated) {
+      const response = await axiosInstance.delete(
+        `/delete_cart_item/${data.cartid}`
+      );
+      if (response) {
+        console.log(response.data.message);
+        console.log(response.data.cart);
+        return JSON.parse(response.data.cart);
+      }
+    } else {
+      const updatedcart = data.cart.filter(
+        (item) =>
+          item.product.id !== data.product && item.selectedsize !== data.size
+      );
+      return updatedcart;
+    }
+  } catch (error) {
+    console.error("Error removing item....", error);
   }
 };
 
@@ -62,23 +92,26 @@ const reducer = (state, action) => {
     case "INIT":
       return action.payload;
     case "SET_QTY":
-      const updateqtystate = state.map((item) => {
-        if (item.id === action.id) {
-          updateqty(action.data);
-          return { ...item, quantity: action.data.quantity };
-        }
-        return item;
+      return state.map((item) => {
+        return item.id === action.id
+          ? { ...item, quantity: action.data.quantity }
+          : item;
       });
-      return updateqtystate;
     case "SET_SIZE":
-      const updatesizestate = state.map((item) => {
-        if (item.id === action.id) {
-          updatesize(action.data);
-          return { ...item, size: action.data.selectedsize };
-        }
-        return item;
+      return state.map((item) => {
+        return item.id === action.id
+          ? {
+              id: `${action.data.product}-${action.data.selectedsize}`,
+              quantity:
+                item.quantity > action.data.maxqty
+                  ? action.data.maxqty
+                  : item.quantity,
+              size: action.data.selectedsize,
+            }
+          : item;
       });
-      return updatesizestate;
+    case "REMOVE":
+      return state.filter((item) => action.id === item.id);
     default:
       throw new Error(`Unknown action type : ${action.type}`);
   }
@@ -128,6 +161,39 @@ export const Cart = () => {
     return size ? size.stock : 10;
   };
 
+  const handleSetQty = async (id, data) => {
+    dispatch({ type: "SET_QTY", id, data });
+    const response = await updateqty(data);
+    if (user && user.is_authenticated) {
+      setCart(response);
+    } else {
+      setCart(response);
+      localStorage.setItem("cart", JSON.stringify(response));
+    }
+  };
+
+  const handleSetSize = async (id, data) => {
+    dispatch({ type: "SET_SIZE", id, data });
+    const response = await updatesize(data);
+    if (user && user.is_authenticated) {
+      setCart(response);
+    } else {
+      setCart(response);
+      localStorage.setItem("cart", JSON.stringify(response));
+    }
+  };
+
+  const handleRemove = async (id, data) => {
+    dispatch({ type: "REMOVE", id });
+    const response = await removecartitem(data);
+    if (user && user.is_authenticated) {
+      setCart(response);
+    } else {
+      setCart(response);
+      localStorage.setItem("cart", JSON.stringify(response));
+    }
+  };
+
   return (
     <>
       <h1>Cart</h1>
@@ -140,31 +206,31 @@ export const Cart = () => {
             );
             const currentQuantity = updatablecartItem
               ? updatablecartItem.quantity
-              : 1;
+              : item.quantity;
             const currentSize = updatablecartItem
               ? updatablecartItem.size
               : item.selectedsize;
-            const maxQuantity = findmax(item.product.sizes, item.selectedsize);
+            const maxQuantity = findmax(item.product.sizes, currentSize);
 
             return (
-              <div>
-                <h4 key={uniqueId}>{item.product.name}</h4>
+              <div key={uniqueId}>
+                <h4>{item.product.name}</h4>
                 <select
                   name="sizes"
                   className="sizes"
                   value={currentSize}
                   onChange={(e) =>
-                    dispatch({
-                      type: "SET_SIZE",
-                      id: uniqueId,
-                      data: {
-                        selectedsize: parseInt(e.target.value, 10),
-                        user: user,
-                        cart: cart,
-                        cartid: item.id ? item.id : null,
-                        product: item.product.id,
-                        size: currentSize,
-                      },
+                    handleSetSize(uniqueId, {
+                      selectedsize: parseInt(e.target.value, 10),
+                      user: user,
+                      cart: cart,
+                      cartid: item.id ? item.id : null,
+                      product: item.product.id,
+                      size: currentSize,
+                      maxqty: findmax(
+                        item.product.sizes,
+                        parseInt(e.target.value, 10)
+                      ),
                     })
                   }
                 >
@@ -181,16 +247,12 @@ export const Cart = () => {
                     type="number"
                     value={currentQuantity}
                     onChange={(e) =>
-                      dispatch({
-                        type: "SET_QTY",
-                        id: uniqueId,
-                        data: {
-                          quantity: parseInt(e.target.value, 10),
-                          user: user,
-                          cart: cart,
-                          product: item.product.id,
-                          size: item.selectedsize,
-                        },
+                      handleSetQty(uniqueId, {
+                        quantity: parseInt(e.target.value, 10),
+                        user: user,
+                        cart: cart,
+                        product: item.product.id,
+                        size: currentSize,
                       })
                     }
                     className="cart-qty-input"
@@ -199,6 +261,19 @@ export const Cart = () => {
                     max={maxQuantity}
                   />
                 </span>
+                <button
+                  onClick={(e) =>
+                    handleRemove(uniqueId, {
+                      user: user,
+                      cart: cart,
+                      cartid: item.id ? item.id : null,
+                      product: item.product.id,
+                      size: currentSize,
+                    })
+                  }
+                >
+                  remove
+                </button>
               </div>
             );
           })

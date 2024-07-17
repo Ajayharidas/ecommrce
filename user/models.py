@@ -126,6 +126,9 @@ class Cart(models.Model):
     def __str__(self):
         return "{} - {}".format(self.user.get_full_name(), self.product)
 
+    def serialize(self):
+        return 
+
 
 class Wishlist(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)

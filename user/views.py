@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse, JsonResponse
 import json
 from django.db.models import Q
+from user.serializers import CartSerializer
 
 
 class HomeView(generic.ListView):
@@ -81,26 +82,6 @@ class AddToWishlist(generic.CreateView):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class AddToCartView(generic.View):
-    def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse(
-                {"message": "You must be logged in to perform this action"}, status=403
-            )
-
-        product = request.GET.get("product")
-        size = request.GET.get("selectedsize")
-        if not product or not size:
-            return JsonResponse({"message": "Invalid parameters"}, status=400)
-
-        try:
-            productsize = ProductSize.objects.get(product__id=product, size__id=size)
-        except ProductSize.DoesNotExist:
-            return JsonResponse({"message": "No matching products found"}, status=404)
-
-        exists = Cart.objects.filter(user=request.user, product=productsize).exists()
-
-        return JsonResponse({"message": exists}, status=200)
-
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return JsonResponse(
@@ -182,6 +163,29 @@ class AddToCartView(generic.View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class CheckCartItem(generic.View):
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"message": "You must be logged in to perform this action"}, status=403
+            )
+
+        product = request.GET.get("product")
+        size = request.GET.get("selectedsize")
+        if not product or not size:
+            return JsonResponse({"message": "Invalid parameters"}, status=400)
+
+        try:
+            productsize = ProductSize.objects.get(product__id=product, size__id=size)
+        except ProductSize.DoesNotExist:
+            return JsonResponse({"message": "No matching products found"}, status=404)
+
+        exists = Cart.objects.filter(user=request.user, product=productsize).exists()
+
+        return JsonResponse({"message": exists}, status=200)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class CartView(generic.ListView):
     model = Cart
     template_name = "index.html"
@@ -190,38 +194,8 @@ class CartView(generic.ListView):
         context = super().get_context_data(**kwargs)
         products = context["object_list"]
         if products:
-            data = [
-                {
-                    "id": item.id,
-                    "product": {
-                        "id": item.product.product.id,
-                        "name": item.product.product.name,
-                        "desciption": item.product.product.description,
-                        "slug": item.product.product.slug,
-                        "price": item.product.product.price,
-                        "brand": {
-                            "id": item.product.product.brand.id,
-                            "name": item.product.product.brand.name,
-                        },
-                        "images": [
-                            {"id": int(image.id), "path": str(image.image)}
-                            for image in item.product.product.productimage.all()
-                        ],
-                        "sizes": [
-                            {
-                                "id": size.size.id,
-                                "name": size.size.name,
-                                "stock": size.stock,
-                            }
-                            for size in item.product.product.productsize.all()
-                        ],
-                    },
-                    "selectedsize": item.product.size.id,
-                    "quantity": item.quantity,
-                }
-                for item in products
-            ]
-            context["data"] = json.dumps(data)
+            serializer = CartSerializer(products=products)
+            context["data"] = serializer.serialize()
         return context
 
     def get_queryset(self):
@@ -247,15 +221,16 @@ class UpdateQTYView(generic.View):
         quantity = data["quantity"]
         if product and size and quantity:
             product = ProductSize.objects.get(product_id=product, size_id=size)
+            user_cart = Cart.objects.filter(user=request.user)
             if product:
-                cartobj = Cart.objects.filter(
-                    user=request.user, product=product
-                ).first()
+                cartobj = user_cart.filter(product=product).first()
                 if cartobj:
                     cartobj.quantity = int(quantity)
                     cartobj.save()
+                    data = CartSerializer(products=user_cart).serialize()
                     return JsonResponse(
-                        {"message": "Quantity updated successfully..."}, status=200
+                        {"message": "Quantity updated successfully...", "cart": data},
+                        status=200,
                     )
                 return JsonResponse({"message": "No cart item found..."}, status=404)
             return JsonResponse({"message": "No matching product found..."}, status=404)
@@ -275,20 +250,67 @@ class UpdateSizeView(generic.View):
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON data"}, status=400)
 
-        cartid = data["cartid"]
-        sizeid = data["sizeid"]
-        productid = data["productid"]
+        cartid = data.get("cart")
+        size = data.get("size")
+        product = data.get("product")
 
-        if cartid and sizeid and productid:
-            product = ProductSize.objects.get(product__id=productid, size__id=sizeid)
-            if product:
-                cart_obj = Cart.objects.filter(id=cartid, user=request.user).first()
-                if cart_obj:
-                    cart_obj.product = product
-                    cart_obj.save()
-                    return JsonResponse(
-                        {"message": "Size updated successfully..."}, status=200
-                    )
-                return JsonResponse({"message": "No cart item found..."}, status=404)
-            return JsonResponse({"message": "No matching product found..."}, status=404)
-        return HttpResponse({"message": "Invalid JSON data...."}, status=400)
+        if not (cartid and size and product):
+            return JsonResponse(
+                {"message": "Missing cart, size, or product data"}, status=400
+            )
+        try:
+            product_size = ProductSize.objects.get(product__id=product, size__id=size)
+        except ProductSize.DoesNotExist:
+            return JsonResponse({"message": "No matching product found"}, status=404)
+
+        cart = Cart.objects.filter(user=request.user)
+        current_size_item = cart.filter(id=cartid).first()
+
+        if not current_size_item:
+            return JsonResponse({"message": "Cart item not found"}, status=404)
+
+        new_size_item = cart.filter(product__id=product_size.id).first()
+
+        if new_size_item and new_size_item.id != current_size_item.id:
+            current_size_item.delete()
+            data = CartSerializer(products=cart).serialize()
+            return JsonResponse(
+                {
+                    "message": "Item with new size already exists, current item deleted",
+                    "cart": data,
+                },
+                status=200,
+            )
+
+        current_size_item.product = product_size
+        current_size_item.quantity = (
+            product_size.stock
+            if current_size_item.quantity > product_size.stock
+            else current_size_item.quantity
+        )
+        current_size_item.save()
+        data = CartSerializer(products=cart).serialize()
+        return JsonResponse({"message": "Update successful", "cart": data}, status=200)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class DeleteCartItem(generic.DeleteView):
+    model = Cart
+
+    def delete(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"message": "You must be logged in to perform this action"}, status=403
+            )
+        try:
+            self.object = self.get_object()
+            self.object.delete()
+            cart = Cart.objects.filter(user=request.user)
+            data = CartSerializer(products=cart).serialize()
+            return JsonResponse(
+                {"message": "Item successfully removed", "cart": data}, status=200
+            )
+        except Cart.DoesNotExist:
+            return JsonResponse({"message": "Item not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
