@@ -8,6 +8,7 @@ import Typography from "@mui/material/Typography";
 import Checkbox from "@mui/material/Checkbox";
 
 export default function FilterList({
+  genders,
   categories,
   brands,
   sizes,
@@ -16,10 +17,20 @@ export default function FilterList({
   const [checkedCategories, setCheckedCategories] = React.useState([]);
   const [checkedBrands, setCheckedBrands] = React.useState([]);
   const [checkedSizes, setCheckedSizes] = React.useState([]);
+  const [checkedGenders, setCheckedGenders] = React.useState([]);
   const [filterObjs, setFilterObjs] = React.useState([]);
 
   const handleToggle = (value, item) => () => {
-    if (item === "categories") {
+    if (item === "genders") {
+      const currentGenderIndex = checkedGenders.indexOf(value);
+      const newCheckedGenders = [...checkedGenders];
+      if (currentGenderIndex === -1) {
+        newCheckedGenders.push(value);
+      } else {
+        newCheckedGenders.splice(currentGenderIndex, 1);
+      }
+      setCheckedGenders(newCheckedGenders);
+    } else if (item === "categories") {
       const currentCategoryIndex = checkedCategories.indexOf(value);
       const newCheckedCategories = [...checkedCategories];
       if (currentCategoryIndex === -1) {
@@ -50,28 +61,31 @@ export default function FilterList({
   };
 
   React.useEffect(() => {
-    fetchproducts({ checkedCategories, checkedBrands, checkedSizes });
-  }, [checkedCategories, checkedBrands, checkedSizes]);
+    fetchproducts({
+      checkedGenders,
+      checkedCategories,
+      checkedBrands,
+      checkedSizes,
+    });
+  }, [checkedGenders, checkedCategories, checkedBrands, checkedSizes]);
 
   React.useEffect(() => {
-    if (categories && categories.length > 0) {
-      setFilterObjs([
-        { items: categories, name: "categories", id: 0 },
-        { items: brands, name: "brands", id: 1 },
-        { items: sizes, name: "sizes", id: 2 },
-      ]);
-    } else {
-      setFilterObjs([
-        { items: brands, name: "brands", id: 0 },
-        { items: sizes, name: "sizes", id: 1 },
-      ]);
-    }
+    const filterdata = [
+      { items: genders, name: "genders", id: 0 },
+      { items: categories, name: "categories", id: 1 },
+      { items: brands, name: "brands", id: 2 },
+      { items: sizes, name: "sizes", id: 3 },
+    ].filter((value) => {
+      return value.items && value.items.length > 0;
+    });
+    setFilterObjs(filterdata);
   }, [categories]);
 
-  console.log(checkedBrands);
-  console.log(checkedCategories);
-  console.log(checkedSizes);
-  return (
+  // console.log(checkedBrands);
+  // console.log(checkedCategories);
+  // console.log(checkedSizes);
+  console.log(filterObjs);
+  return filterObjs && filterObjs.length > 0 ? (
     <List
       sx={{
         width: "100%",
@@ -109,7 +123,9 @@ export default function FilterList({
                       edge="end"
                       onChange={handleToggle(value.id, item.name)}
                       checked={
-                        item.name === "categories"
+                        item.name === "genders"
+                          ? checkedGenders.indexOf(value.id) !== -1
+                          : item.name === "categories"
                           ? checkedCategories.indexOf(value.id) !== -1
                           : item.name === "brands"
                           ? checkedBrands.indexOf(value.id) !== -1
@@ -134,5 +150,5 @@ export default function FilterList({
         </li>
       ))}
     </List>
-  );
+  ) : null;
 }

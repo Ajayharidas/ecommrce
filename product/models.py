@@ -4,10 +4,18 @@ from brand.models import Brand
 from category.models import Category
 from django.template.defaultfilters import slugify
 from django.db.models import Prefetch
+from django.db import connection
+
+
+class Gender(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Product(models.Model):
-    class StockManager(models.Manager):
+    class ProductManager(models.Manager):
 
         def get_queryset(self):
             products = (
@@ -15,10 +23,11 @@ class Product(models.Model):
                 .get_queryset()
                 .select_related("brand")
                 .prefetch_related(
-                    Prefetch("productimage"),
-                    Prefetch("productsize"),
-                    Prefetch("productsize__size"),
-                    Prefetch("productsize__cart"),
+                    "productimage",
+                    Prefetch(
+                        "productsize",
+                        queryset=ProductSize.objects.select_related("size"),
+                    ),
                 )
             )
             return products
@@ -29,7 +38,14 @@ class Product(models.Model):
     price = models.IntegerField()
     category = models.ManyToManyField(Category, related_name="product")
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="product")
-    objects = StockManager()
+    gender = models.ManyToManyField(
+        Gender,
+        null=True,
+        blank=True,
+        related_name="product",
+    )
+    objects = models.Manager()
+    productobjects = ProductManager()
 
     def save(self, *args, **kwargs):
         if not self.slug:

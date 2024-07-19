@@ -1,13 +1,12 @@
-from lib2to3.fixes.fix_input import context
 from django.db.models.query import QuerySet
 from django.http.response import HttpResponse as HttpResponse
 from django.shortcuts import render
 from django.views import generic
 from brand.models import Brand
-from product.models import Product, ProductImages, ProductSize, Size
+from product.models import Gender, Product, Size
 from category.models import Category
-from django.db.models import Count, Q, F, Prefetch
-from django.http import HttpRequest, JsonResponse
+from django.db.models import Q
+from django.http import JsonResponse
 import json
 
 
@@ -16,9 +15,9 @@ class ProductListView(generic.ListView):
     template_name = "index.html"
 
     def get_queryset(self):
-        return self.model.objects.filter(
-            Q(category__id=self.kwargs.get("pk"))
-            | Q(category__parent__id=self.kwargs.get("pk"))
+        category_id = self.kwargs.get("pk")
+        return self.model.productobjects.filter(
+            Q(category__id=category_id) | Q(category__parent__id=category_id)
         ).distinct()
 
     def get_context_data(self, **kwargs):
@@ -47,14 +46,13 @@ class ProductListView(generic.ListView):
             for product in products_queryset
         ]
 
+        genders = Gender.objects.filter(product__in=products_queryset).distinct()
+
         categories = (
-            Category.objects.filter(
-                product__in=products_queryset, parent__id=self.kwargs.get("pk")
-            )
+            Category.objects.filter(product__in=products_queryset, parent__isnull=False)
             .distinct()
             .only("id", "name")
         )
-
         sizes = Size.objects.filter(
             productsize__product__in=products_queryset
         ).distinct()
@@ -75,6 +73,9 @@ class ProductListView(generic.ListView):
             ),
             "brands": list({"id": brand.id, "name": brand.name} for brand in brands),
             "sizes": list({"id": size.id, "name": size.name} for size in sizes),
+            "genders": list(
+                {"id": gender.id, "name": gender.name} for gender in genders
+            ),
         }
 
         context["data"] = json.dumps({"products": product_data, "filters": filter_data})
@@ -106,10 +107,14 @@ class ProductDetailView(generic.DetailView):
         context["data"] = json.dumps(product_dict)
         return context
 
+    def get_queryset(self):
+        return self.model.productobjects.all()
+
 
 class ProductFilterView(generic.View):
     def get(self, request, *args, **kwargs):
         category = int(request.GET.get("category", ""))
+        genders = [int(gender) for gender in request.GET.getlist("genders[]", [])]
         subcategories = [
             int(subcategory)
             for subcategory in request.GET.getlist("subcategories[]", [])
@@ -117,10 +122,13 @@ class ProductFilterView(generic.View):
         brands = [int(brand) for brand in request.GET.getlist("brands[]", [])]
         sizes = [int(size) for size in request.GET.getlist("sizes[]", [])]
 
-        queryset = Product.objects.all()
+        queryset = Product.productobjects.all()
 
         if category:
             queryset = queryset.filter(category__id=category)
+
+        if genders:
+            queryset = queryset.filter(gender__id__in=genders)
 
         if subcategories:
             queryset = queryset.filter(category__id__in=subcategories)
@@ -156,3 +164,5 @@ class ProductFilterView(generic.View):
             for product in queryset
         )
         return JsonResponse(data, safe=False)
+    
+

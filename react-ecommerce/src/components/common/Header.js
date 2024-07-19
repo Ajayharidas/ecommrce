@@ -69,6 +69,7 @@ export default function SearchAppBar() {
     user && user.is_authenticated
       ? { url: "/accounts/logout/", name: "logout" }
       : { url: "/accounts/login/", name: "login" },
+    { url: "/wishlist", name: "wishlist" },
     { url: "/cart", name: "cart" },
   ]);
   return (

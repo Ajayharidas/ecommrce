@@ -50,9 +50,7 @@ const updatesize = async (data) => {
           ? {
               ...item,
               quantity:
-                item.quantity > data.maxqty
-                  ? data.maxqty
-                  : item.quantity,
+                item.quantity > data.maxqty ? data.maxqty : item.quantity,
               selectedsize: data.selectedsize,
             }
           : item;
@@ -76,10 +74,11 @@ const removecartitem = async (data) => {
         return JSON.parse(response.data.cart);
       }
     } else {
-      const updatedcart = data.cart.filter(
-        (item) =>
-          item.product.id !== data.product && item.selectedsize !== data.size
-      );
+      const updatedcart = data.cart.filter((item) => {
+        console.log(item.id, data.cartid);
+        return item.id !== data.cartid;
+      });
+      console.log(updatedcart);
       return updatedcart;
     }
   } catch (error) {
@@ -193,6 +192,8 @@ export const Cart = () => {
       localStorage.setItem("cart", JSON.stringify(response));
     }
   };
+  console.log(cart);
+  console.log(updatablecart);
 
   return (
     <>
@@ -235,8 +236,12 @@ export const Cart = () => {
                   }
                 >
                   {item.product.sizes.map((size) => {
-                    return (
+                    return size.stock > 0 ? (
                       <option value={size.id} key={size.id}>
+                        {size.name}
+                      </option>
+                    ) : (
+                      <option value={size.id} key={size.id} disabled>
                         {size.name}
                       </option>
                     );
@@ -266,9 +271,7 @@ export const Cart = () => {
                     handleRemove(uniqueId, {
                       user: user,
                       cart: cart,
-                      cartid: item.id ? item.id : null,
-                      product: item.product.id,
-                      size: currentSize,
+                      cartid: item.id,
                     })
                   }
                 >

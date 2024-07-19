@@ -103,40 +103,60 @@ class Cart(models.Model):
             return (
                 super()
                 .get_queryset()
-                .select_related("product", "user")
+                .select_related("productsize", "user", "productsize__size")
                 .prefetch_related(
-                    Prefetch("product__product"),
-                    Prefetch("product__product__brand"),
-                    Prefetch("product__product__productimage"),
-                    Prefetch("product__product__productsize"),
-                    Prefetch("product__product__productsize__size"),
-                    Prefetch("product__size"),
+                    Prefetch(
+                        "productsize__product",
+                        queryset=Product.objects.select_related(
+                            "brand"
+                        ).prefetch_related(
+                            "productimage",
+                            Prefetch(
+                                "productsize",
+                                queryset=ProductSize.objects.select_related("size"),
+                            ),
+                        ),
+                    ),
                 )
             )
 
     user = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, blank=True, null=True, related_name="cart"
     )
-    product = models.ForeignKey(
+    productsize = models.ForeignKey(
         ProductSize, on_delete=models.CASCADE, related_name="cart"
     )
     quantity = models.PositiveIntegerField(default=1)
-    objects = CartManager()
+    objects = models.Manager()
+    cartobjects = CartManager()
 
     def __str__(self):
         return "{} - {}".format(self.user.get_full_name(), self.product)
 
-    def serialize(self):
-        return 
-
 
 class Wishlist(models.Model):
+    class WishlistManager(models.Manager):
+        def get_queryset(self):
+            return (
+                super()
+                .get_queryset()
+                .prefetch_related(
+                    # modelname__product as default reverse relationship name if not specified
+                    Prefetch("items"),
+                    Prefetch("items__product__brand"),
+                    Prefetch("items__product__productimage"),
+                )
+            )
+
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    objects = models.Manager()
+    wishlistobjects = WishlistManager()
 
     def __str__(self):
         return f"Wishlist of {self.user.username}"
 
 
+# if we specify a related_name the default model name as related_name will not work
 class WishlistItem(models.Model):
     wishlist = models.ForeignKey(
         Wishlist, related_name="items", on_delete=models.CASCADE

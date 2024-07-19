@@ -10,6 +10,8 @@ import Home from "./components/home/Home";
 import Products from "./components/product/Products";
 import Product from "./components/product/Product";
 import { Cart } from "./components/cart/Cart";
+import Wishlist from "./components/wishlist/Wishlist";
+import CreateCategory from "./components/admin/category/CreateCategory";
 import React, { useState, useEffect } from "react";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
@@ -63,6 +65,8 @@ function App() {
                 element={<Product />}
               />
               <Route path="/cart" element={<Cart />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/category/create-category" element={<CreateCategory />} />
             </Routes>
           </Grid>
         </Grid>

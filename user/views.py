@@ -1,3 +1,5 @@
+from django.db.models.base import Model as Model
+from django.db.models.query import QuerySet
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views import generic
 from product.models import Product, ProductSize
@@ -9,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse, JsonResponse
 import json
 from django.db.models import Q
-from user.serializers import CartSerializer
+from user.serializers import CartSerializer, WishlistSerializer
 
 
 class HomeView(generic.ListView):
@@ -110,9 +112,9 @@ class AddToCartView(generic.View):
 
             if products:
                 # Get all products already in the user's cart
-                existing_cart_products = Cart.objects.filter(
-                    user=request.user, product__in=products
-                ).values_list("product_id", flat=True)
+                existing_cart_products = Cart.cartobjects.filter(
+                    user=request.user, productsize__in=products
+                ).values_list("productsize_id", flat=True)
 
                 # Determine which products are not in the cart
                 products_to_add = [
@@ -130,28 +132,28 @@ class AddToCartView(generic.View):
 
                 # Bulk create new cart entries
                 if products_to_add:
-                    Cart.objects.bulk_create(
+                    Cart.cartobjects.bulk_create(
                         [
-                            Cart(user=request.user, product=product)
+                            Cart(user=request.user, productsize=product)
                             for product in products_to_add
                         ]
                     )
 
                 # Bulk update cart entries
                 if products_to_update:
-                    cart_items = Cart.objects.filter(
-                        user=request.user, product__in=products_to_update
+                    cart_items = Cart.cartobjects.filter(
+                        user=request.user, productsize__in=products_to_update
                     )
 
                     for cart_item in cart_items:
                         for qty in qty_list:
                             if (
-                                cart_item.product.product.id == qty["product"]
-                                and cart_item.product.size.id == qty["size"]
+                                cart_item.productsize.product.id == qty["product"]
+                                and cart_item.productsize.size.id == qty["size"]
                             ):
                                 cart_item.quantity = qty["quantity"]
 
-                    Cart.objects.bulk_update(cart_items, ["quantity"])
+                    Cart.cartobjects.bulk_update(cart_items, ["quantity"])
 
                 return JsonResponse(
                     {"message": "Updated cart successfully"}, status=201
@@ -172,15 +174,18 @@ class CheckCartItem(generic.View):
 
         product = request.GET.get("product")
         size = request.GET.get("selectedsize")
+        print(product, size)
         if not product or not size:
             return JsonResponse({"message": "Invalid parameters"}, status=400)
 
         try:
-            productsize = ProductSize.objects.get(product__id=product, size__id=size)
+            productsize = ProductSize.objects.get(product_id=product, size__id=size)
         except ProductSize.DoesNotExist:
             return JsonResponse({"message": "No matching products found"}, status=404)
 
-        exists = Cart.objects.filter(user=request.user, product=productsize).exists()
+        exists = Cart.cartobjects.filter(
+            user=request.user, productsize=productsize
+        ).exists()
 
         return JsonResponse({"message": exists}, status=200)
 
@@ -200,7 +205,7 @@ class CartView(generic.ListView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return self.model.objects.filter(user=self.request.user)
+            return self.model.cartobjects.filter(user=self.request.user)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -221,9 +226,9 @@ class UpdateQTYView(generic.View):
         quantity = data["quantity"]
         if product and size and quantity:
             product = ProductSize.objects.get(product_id=product, size_id=size)
-            user_cart = Cart.objects.filter(user=request.user)
+            user_cart = Cart.cartobjects.filter(user=request.user)
             if product:
-                cartobj = user_cart.filter(product=product).first()
+                cartobj = user_cart.filter(productsize_id=product).first()
                 if cartobj:
                     cartobj.quantity = int(quantity)
                     cartobj.save()
@@ -263,13 +268,13 @@ class UpdateSizeView(generic.View):
         except ProductSize.DoesNotExist:
             return JsonResponse({"message": "No matching product found"}, status=404)
 
-        cart = Cart.objects.filter(user=request.user)
+        cart = Cart.cartobjects.filter(user=request.user)
         current_size_item = cart.filter(id=cartid).first()
 
         if not current_size_item:
             return JsonResponse({"message": "Cart item not found"}, status=404)
 
-        new_size_item = cart.filter(product__id=product_size.id).first()
+        new_size_item = cart.filter(productsize_id=product_size.id).first()
 
         if new_size_item and new_size_item.id != current_size_item.id:
             current_size_item.delete()
@@ -282,7 +287,7 @@ class UpdateSizeView(generic.View):
                 status=200,
             )
 
-        current_size_item.product = product_size
+        current_size_item.productsize = product_size
         current_size_item.quantity = (
             product_size.stock
             if current_size_item.quantity > product_size.stock
@@ -305,12 +310,64 @@ class DeleteCartItem(generic.DeleteView):
         try:
             self.object = self.get_object()
             self.object.delete()
-            cart = Cart.objects.filter(user=request.user)
+            cart = Cart.cartobjects.filter(user=request.user)
             data = CartSerializer(products=cart).serialize()
             return JsonResponse(
                 {"message": "Item successfully removed", "cart": data}, status=200
             )
         except Cart.DoesNotExist:
+            return JsonResponse({"message": "Item not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+
+
+class WishlistView(generic.DetailView):
+    model = Wishlist
+    template_name = "index.html"
+    context_object_name = "wishlist"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        wishlist = context.get(self.context_object_name)
+        context["data"] = WishlistSerializer(wishlist).serialize() if wishlist else None
+        return context
+
+    def get_object(self):
+        if not self.request.user.is_authenticated:
+            return None
+        return self.model.wishlistobjects.get(user__id=self.request.user.id)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class DeleteWishlistItem(generic.DeleteView):
+    model = WishlistItem
+
+    def delete(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {"message": "You must be logged in to perform this action"}, status=403
+            )
+        try:
+            self.object = self.get_object()
+            wishlist = self.model.objects.filter(wishlist__user=request.user)
+            if self.object not in wishlist:
+                return JsonResponse({"message": "Item not found"}, status=404)
+
+            # Delete the item
+            self.object.delete()
+
+            # Get the updated wishlist
+            updated_wishlist = Wishlist.wishlistobjects.get(user=request.user)
+            wishlist = WishlistSerializer(wishlist=updated_wishlist).serialize()
+
+            return JsonResponse(
+                {
+                    "message": "Item successfully removed",
+                    "wishlist": wishlist,
+                },
+                status=200,
+            )
+        except WishlistItem.DoesNotExist:
             return JsonResponse({"message": "Item not found"}, status=404)
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)

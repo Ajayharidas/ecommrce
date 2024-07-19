@@ -10,42 +10,49 @@ const Products = () => {
   const { categoryid } = useParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [genders, setGenders] = useState([]);
   const [sizes, setSizes] = useState([]);
   const [brands, setBrands] = useState([]);
 
-  useEffect(() => {
+  // Function to fetch initial data
+  const fetchInitialData = () => {
     const jsonData = document.getElementById("data")?.textContent;
     if (jsonData) {
       try {
-        const parseData = JSON.parse(jsonData);
-        setProducts(parseData.products);
-        setCategories(parseData.filters.categories);
-        setBrands(parseData.filters.brands);
-        setSizes(parseData.filters.sizes);
+        const parsedData = JSON.parse(jsonData);
+        setProducts(parsedData.products);
+        setCategories(parsedData.filters.categories);
+        setBrands(parsedData.filters.brands);
+        setSizes(parsedData.filters.sizes);
+        setGenders(parsedData.filters.genders);
       } catch (error) {
         console.error("Error parsing JSON:", error);
       }
     } else {
       console.warn("No data found in the element with id 'data'");
     }
-  }, []);
-  console.log(products);
+  };
 
-  const fetchproducts = async (options) => {
+  // Fetch initial data on component mount
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  // Function to fetch products based on filters
+  const fetchProducts = async (options) => {
     try {
-      await axiosInstance
-        .get(`/product/filter/`, {
-          params: {
-            category: categoryid,
-            subcategories: options.checkedCategories,
-            brands: options.checkedBrands,
-            sizes: options.checkedSizes,
-          },
-        })
-        .then((response) => setProducts(response.data))
-        .catch((error) => console.error("Error filtering products : ", error));
+      const response = await axiosInstance.get(`/product/filter/`, {
+        params: {
+          category: categoryid,
+          genders: options.checkedGenders,
+          subcategories: options.checkedCategories,
+          brands: options.checkedBrands,
+          sizes: options.checkedSizes,
+        },
+      });
+      setProducts(response.data);
     } catch (error) {
-      console.error("Error filtering products : ", error);
+      console.error("Error filtering products: ", error);
     }
   };
 
@@ -76,13 +83,14 @@ const Products = () => {
             component={"div"}
             textTransform={"uppercase"}
           >
-            filters
+            Filters
           </Typography>
           <FilterList
+            genders={genders}
             categories={categories}
             brands={brands}
             sizes={sizes}
-            fetchproducts={fetchproducts}
+            fetchproducts={fetchProducts}
           />
         </Grid>
         <Grid item xl={9} lg={9} md={9} sm={12} xs={12}>
@@ -93,7 +101,7 @@ const Products = () => {
             spacing={3}
             px={4}
           >
-            {products && products.length > 0 ? (
+            {products.length > 0 ? (
               products.map((product) => (
                 <Grid item xl={3} lg={3} md={3} sm={3} xs={4} key={product.id}>
                   <ProductCard

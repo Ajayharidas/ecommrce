@@ -79,7 +79,14 @@ const Product = () => {
 
   const handleSize = (product, size) => {
     const localcartdata = JSON.parse(localStorage.getItem("cart"));
-    setNewproduct([{ product: product, selectedsize: size, quantity: 1 }]);
+    setNewproduct([
+      {
+        id: `${product.id}-${size}`,
+        product: product,
+        selectedsize: size,
+        quantity: 1,
+      },
+    ]);
 
     if (localcartdata) {
       const exists = localcartdata.some((item) => {
